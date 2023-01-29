@@ -1,0 +1,13 @@
+-Les objets Vulkan sont soit créés directement avec des fonctions comme vkCreateXXX,
+    soit alloués via un autre objet avec des fonctions comme vkAllocateXXX.
+    Après vous être assuré qu'un objet n'est plus utilisé nulle part,
+    vous devez le détruire avec les contreparties vkDestroyXXXet vkFreeXXX.
+
+----------------------------------------------------------------------------------------
+
+-La toute première chose que vous devez faire est d'initialiser la bibliothèque
+    Vulkan en créant une instance . L'instance est la connexion entre votre application
+    et la bibliothèque Vulkan et sa création implique de spécifier certains détails
+    sur votre application au pilote.
+
+
