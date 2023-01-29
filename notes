@@ -10,4 +10,13 @@
     et la bibliothèque Vulkan et sa création implique de spécifier certains détails
     sur votre application au pilote.
 
+-Vulkan introduit un système élégant pour cela connu sous le nom de couches de validation .
+    Les couches de validation sont des composants facultatifs qui se connectent aux appels de
+    fonction Vulkan pour appliquer des opérations supplémentaires. Les opérations courantes dans
+    les couches de validation sont :
 
+*Vérification des valeurs des paramètres par rapport à la spécification pour détecter une mauvaise utilisation
+*Suivi de la création et de la destruction d'objets pour trouver des fuites de ressources
+*Vérification de la sécurité des threads en suivant les threads d'où proviennent les appels
+*Journalisation de chaque appel et de ses paramètres sur la sortie standard
+*Le traçage de Vulkan appelle au profilage et à la relecture

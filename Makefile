@@ -6,7 +6,7 @@
 #    By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/08/23 13:22:35 by nadesjar          #+#    #+#              #
-#    Updated: 2023/01/28 22:38:33 by dracken24        ###   ########.fr        #
+#    Updated: 2023/01/29 00:06:34 by dracken24        ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -23,7 +23,7 @@ OBJS			= $(patsubst $(P_SRCS)%.cpp, $(P_OBJS)%.o, $(FILES))
 
 CC				= c++
 
-CFLAGS			= -Wall -Werror -Wextra -std=c++17 -I$(VULKAN_SDK_PATH)/include \
+CFLAGS			= -std=c++17 -I$(VULKAN_SDK_PATH)/include \
 				-Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable
 				
 LDFLAGS 		= -L$(VULKAN_SDK_PATH)/lib `pkg-config --static --libs glfw3` -lvulkan

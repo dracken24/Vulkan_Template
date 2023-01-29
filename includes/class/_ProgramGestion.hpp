@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/28 22:49:31 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/29 00:10:06 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,14 +14,26 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.hpp>
 
 #include <iostream>
 #include <stdexcept>
-#include <cstdlib>
 #include <vector>
+#include <cstring>
+#include <cstdlib>
 
 #define WIDTH 1600
 #define HEIGHT 920
+
+const std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
+#ifdef NDEBUG
+    const bool enableValidationLayers = false;
+#else
+    const bool enableValidationLayers = true;
+#endif
 
 
 class ProgramGestion
@@ -43,12 +55,24 @@ class ProgramGestion
 		void	initVulkan();
 		void	mainLoop();
 		void	cleanup();
-		void	initWindows();
+		void	initWindow();
 
 		void	createInstance();
+		bool	checkValidationLayerSupport();
+		void	setupDebugCallback();
+		std::vector<const char*>	getRequiredExtensions();
+		
+		VkResult	CreateDebugUtilsMessengerEXT(VkInstance instance,
+						const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+						const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback);
 
+		void		DestroyDebugUtilsMessengerEXT(VkInstance instance,
+						VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator);
+						
 	// Private Attributes //
 	private:
-		GLFWwindow	*window;
-		VkInstance	instance;
+		GLFWwindow			*window;
+		vk::UniqueInstance	instance;
+		
+		VkDebugUtilsMessengerEXT	callback;		
 };
