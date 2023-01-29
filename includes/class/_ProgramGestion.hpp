@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/29 14:31:52 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/29 17:27:13 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,9 @@
 #include <vector>
 #include <cstring>
 #include <cstdlib>
+#include <optional>
+#include <set>
+#include <map>
 
 #define WIDTH 1600
 #define HEIGHT 920
@@ -56,11 +59,23 @@ class ProgramGestion
 		void	cleanup();
 		void	initWindow();
 
-		// void	pickPhysicalDevice(); //- Find Graphic card -//
+		void	pickPhysicalDevice(); //- Find Graphic card -//
+		bool	isDeviceSuitable(VkPhysicalDevice device);
 
 		void	createInstance();
 		bool	checkValidationLayerSupport();
-						
+		void	setupDebugMessenger();
+
+		std::vector<const char*>	getRequiredExtensions();
+
+		void	DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+					const VkAllocationCallbacks* pAllocator);
+		
+		VkResult	CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT
+						*pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+		
+		void	populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+					
 	// Private Attributes //
 	private:
 		GLFWwindow	*window;
