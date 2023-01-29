@@ -6,11 +6,16 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:20:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/29 00:12:28 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/29 14:45:20 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/class/_ProgramGestion.hpp"
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL	debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData);
 
 // Constructor - Destructor //
 
@@ -53,28 +58,12 @@ void	ProgramGestion::run()
 /* ************************************************************************** */
 // Private Methods //
 
-VkResult	ProgramGestion::CreateDebugUtilsMessengerEXT(VkInstance instance,
-				const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-				const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback)
-{
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-	if (func != nullptr) {
-		return func(instance, pCreateInfo, pAllocator, pCallback);
-	} else {
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
-}
-
-void	ProgramGestion::DestroyDebugUtilsMessengerEXT(VkInstance instance,
-			VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator)
-{
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	
-	if (func != nullptr)
-	{
-		func(instance, callback, pAllocator);
-	}
-}
+//- Find Graphic card -//
+// void	ProgramGestion::pickPhysicalDevice()
+// {
+// 	uint32_t deviceCount = 0;
+// 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+// }
 
 void	ProgramGestion::initWindow()
 {
@@ -89,7 +78,7 @@ void	ProgramGestion::initWindow()
 void ProgramGestion::initVulkan()
 {
 	createInstance();
-	setupDebugCallback();
+	// setupDebugMessenger();
 }
 
 void ProgramGestion::mainLoop()
@@ -101,104 +90,114 @@ void ProgramGestion::mainLoop()
 }
 
 void ProgramGestion::cleanup()
-{
-	if (enableValidationLayers)
-	{
-		DestroyDebugUtilsMessengerEXT(*instance, callback, nullptr);
-	}
-
-	// NOTE: instance destruction is handled by UniqueInstance
-
+{	
+	vkDestroyInstance(instance, nullptr);
+	
 	glfwDestroyWindow(window);
-
 	glfwTerminate();
 }
 
+//*********************************************************************************//
+
 void	ProgramGestion::createInstance()
 {
-	if (enableValidationLayers && !checkValidationLayerSupport()) {
-		throw std::runtime_error("validation layers requested, but not available!");
-	}
+	if (enableValidationLayers && !checkValidationLayerSupport())
+	{
+        throw std::runtime_error("validation layers requested, but not available!");
+    }
 
-	auto appInfo = vk::ApplicationInfo(
-		"DrackenLib",
-		VK_MAKE_VERSION(1, 0, 0),
-		"DrackEngine",
-		VK_MAKE_VERSION(1, 0, 0),
-		VK_API_VERSION_1_0
-	);
 	
-	auto extensions = getRequiredExtensions();
+	VkApplicationInfo	appInfo{};
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName = "DrackenLib";
+    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pEngineName = "DrackEngine";
+    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.apiVersion = VK_API_VERSION_1_0;
 
-	auto createInfo = vk::InstanceCreateInfo( vk::InstanceCreateFlags(),
-		&appInfo, 0, nullptr,	static_cast<uint32_t>(extensions.size()), extensions.data());
-
+	VkInstanceCreateInfo	createInfo{};
 	if (enableValidationLayers)
 	{
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 	}
-
-	try
+	else
 	{
-		instance = vk::createInstanceUnique(createInfo, nullptr);
+		createInfo.enabledLayerCount = 0;
 	}
-	catch (vk::SystemError err)
-	{
-		throw std::runtime_error("failed to create instance!");
-	}
-}
 
-void	ProgramGestion::setupDebugCallback()
-{
-	if (!enableValidationLayers)
-		return;
+	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	createInfo.pApplicationInfo = &appInfo;
 
-	auto createInfo = vk::DebugUtilsMessengerCreateInfoEXT(vk::DebugUtilsMessengerCreateFlagsEXT(),
-		vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
-		| vk::DebugUtilsMessageSeverityFlagBitsEXT::eError, vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-		| vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-		nullptr);
+	uint32_t glfwExtensionCount = 0;
+	const char** glfwExtensions;
 
-	if (CreateDebugUtilsMessengerEXT(*instance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>
-		(&createInfo), nullptr, &callback) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to set up debug callback!");
-	}
-}
-
-std::vector<const char*>	ProgramGestion::getRequiredExtensions()
-{
-	uint32_t		glfwExtensionCount = 0;
-	const char**	glfwExtensions;
-	
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-	std::vector<const char*>	extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	createInfo.enabledExtensionCount = glfwExtensionCount;
+	createInfo.ppEnabledExtensionNames = glfwExtensions;
+	createInfo.enabledLayerCount = 0;
 
-	if (enableValidationLayers)
+	VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+
+	if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
 	{
-		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    	throw std::runtime_error("failed to create instance!");
 	}
 
-	return extensions;
+
+	// //- See avaliable extensions -//
+	// uint32_t extensionCount = 0;
+	// vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+	
+	// std::vector<VkExtensionProperties> extensions(extensionCount);
+	// vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+	// std::cout << "available extensions:\n";
+
+	// for (const auto& extension : extensions)
+	// {
+    // std::cout << '\t' << extension.extensionName << std::endl;
+	// }
+	
+	// //- See avaliable layers -//
+	// uint32_t layerCount = 0;
+	// vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+	
+	// std::vector<VkLayerProperties> layers(layerCount);
+	// vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+
+	// std::cout << "\navailable layers:" << std::endl;
+	
+	// for (const auto& layer : layers)
+	// {
+	// std::cout << '\t' << layer.layerName << std::endl;
+	// }
 }
 
 bool	ProgramGestion::checkValidationLayerSupport()
 {
-	auto availableLayers = vk::enumerateInstanceLayerProperties();
-	
-	for (const char* layerName : validationLayers) {
-		bool layerFound = false;
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
-		for (const auto& layerProperties : availableLayers) {
-			if (strcmp(layerName, layerProperties.layerName) == 0) {
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers)
+	{
+    	bool layerFound = false;
+
+		for (const auto& layerProperties : availableLayers)
+		{
+			if (strcmp(layerName, layerProperties.layerName) == 0)
+			{
 				layerFound = true;
 				break;
 			}
 		}
 
-		if (!layerFound) {
+		if (!layerFound)
+		{
 			return false;
 		}
 	}
@@ -206,12 +205,9 @@ bool	ProgramGestion::checkValidationLayerSupport()
 	return true;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL	debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-											VkDebugUtilsMessageTypeFlagsEXT messageType,
-											const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-											void* pUserData)
-{
-	std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
-	return VK_FALSE;
-}
+
+//****************************************************************************************************//
+// No member functions //
+
+

@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/29 00:10:06 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/29 14:31:52 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,6 @@ const std::vector<const char*> validationLayers = {
     const bool enableValidationLayers = true;
 #endif
 
-
 class ProgramGestion
 {
 	// Constructor - Destructor //
@@ -57,22 +56,18 @@ class ProgramGestion
 		void	cleanup();
 		void	initWindow();
 
+		// void	pickPhysicalDevice(); //- Find Graphic card -//
+
 		void	createInstance();
 		bool	checkValidationLayerSupport();
-		void	setupDebugCallback();
-		std::vector<const char*>	getRequiredExtensions();
-		
-		VkResult	CreateDebugUtilsMessengerEXT(VkInstance instance,
-						const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-						const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback);
-
-		void		DestroyDebugUtilsMessengerEXT(VkInstance instance,
-						VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator);
 						
 	// Private Attributes //
 	private:
-		GLFWwindow			*window;
-		vk::UniqueInstance	instance;
+		GLFWwindow	*window;
+		VkInstance	instance;
 		
-		VkDebugUtilsMessengerEXT	callback;		
+		VkDebugUtilsMessengerEXT	debugMessenger;
+		VkPhysicalDevice			physicalDevice = VK_NULL_HANDLE; //- Stock graphic card -//	
 };
+
+
