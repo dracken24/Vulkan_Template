@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/29 19:17:51 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/29 20:50:21 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,11 @@ const std::vector<const char*> validationLayers = {
     const bool enableValidationLayers = true;
 #endif
 
+// Queue family indices //
 struct QueueFamilyIndices
 {
-	std::optional<uint32_t>	graphicsFamily;
+	std::optional<uint32_t>		graphicsFamily;
+	std::optional<uint32_t>		presentFamily;
 	
 	bool isComplete()
 	{
@@ -79,12 +81,14 @@ class ProgramGestion
 	// GPU //
 		void	pickPhysicalDevice(); //- Find Graphic card -//
 		bool	isDeviceSuitable(VkPhysicalDevice device);
+		void	createLogicalDevice();
 
 	/****************************************************************************************/
 	// Queue //
 		QueueFamilyIndices	findQueueFamilies(VkPhysicalDevice device);
 
 	/****************************************************************************************/
+	// Instance creation and debug messages //
 		void	createInstance();
 		bool	checkValidationLayerSupport();
 		void	setupDebugMessenger();
@@ -103,11 +107,13 @@ class ProgramGestion
 					
 	// Private Attributes //
 	private:
-		GLFWwindow	*window;
-		VkInstance	instance;
+		GLFWwindow	*window;	//- Stock window -//
+		VkInstance	instance;	//- Stock instance -//
 		
-		VkDebugUtilsMessengerEXT	debugMessenger;
+		VkDebugUtilsMessengerEXT	debugMessenger;	//- Debug messenger -//
+		
 		VkPhysicalDevice			physicalDevice = VK_NULL_HANDLE; //- Stock graphic card -//	
+		VkDevice					device; 		//- Stock logical device -//
+		VkQueue						graphicsQueue;	//- Stock queue -//
+		VkSurfaceKHR				surface; 		//- Stock surface -//
 };
-
-
