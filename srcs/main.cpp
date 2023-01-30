@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:14:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/28 23:20:36 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/29 17:40:01 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ int		main(void)
 
     try 
 	{
-        app.run();
+        app.run("Vulkan", true);
     }
 	catch (const std::exception& e)
 	{

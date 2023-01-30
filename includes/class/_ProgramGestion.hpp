@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/29 17:27:13 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/29 19:17:51 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,8 +38,20 @@ const std::vector<const char*> validationLayers = {
     const bool enableValidationLayers = true;
 #endif
 
+struct QueueFamilyIndices
+{
+	std::optional<uint32_t>	graphicsFamily;
+	
+	bool isComplete()
+	{
+        return graphicsFamily.has_value();
+    }
+};
+
 class ProgramGestion
 {
+	/****************************************************************************************/
+	
 	// Constructor - Destructor //
 	public:
 		ProgramGestion();
@@ -48,20 +60,31 @@ class ProgramGestion
 		
 		ProgramGestion	&operator=(const ProgramGestion &src);
 	
+	/****************************************************************************************/
+
 	// Public Methods //
 	public:
-		void	run();
+		void	run(std::string name, bool resizeable);
+
+	/****************************************************************************************/
 
 	// Private Methods //
 	private:
 		void	initVulkan();
 		void	mainLoop();
 		void	cleanup();
-		void	initWindow();
+		void	initWindow(std::string name, bool resizeable);
 
+	/****************************************************************************************/
+	// GPU //
 		void	pickPhysicalDevice(); //- Find Graphic card -//
 		bool	isDeviceSuitable(VkPhysicalDevice device);
 
+	/****************************************************************************************/
+	// Queue //
+		QueueFamilyIndices	findQueueFamilies(VkPhysicalDevice device);
+
+	/****************************************************************************************/
 		void	createInstance();
 		bool	checkValidationLayerSupport();
 		void	setupDebugMessenger();
@@ -75,6 +98,8 @@ class ProgramGestion
 						*pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 		
 		void	populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+		
+	/****************************************************************************************/
 					
 	// Private Attributes //
 	private:
