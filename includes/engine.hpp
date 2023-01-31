@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 21:41:29 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/30 22:03:47 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/31 12:58:40 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,9 @@
 
 typedef unsigned char   uchar;
 
-/******************************************************************************/
-// Basic data types //
+
+//****************************************** Basic data types *****************************************//
+
 typedef struct  Vector2
 {
 	float	x;
@@ -78,8 +79,8 @@ typedef struct  Transform3D
 	Vector3		worldScale;     // World scale
 }               Transform3D;
 
-/******************************************************************************/
-// Basic 2D shapes //
+
+//****************************************** Basic 2D shapes ******************************************//
 
 typedef struct  Rectangle
 {
@@ -116,8 +117,7 @@ typedef struct	Line
 }				Line;
 
 
-/******************************************************************************/
-// Basic 3D shapes //
+//****************************************** Basic 3D shapes ******************************************//
 
 typedef struct	Cube
 {
@@ -158,7 +158,8 @@ typedef struct	Line3
 	Vector3	end;
 }				Line3;
 
-/******************************************************************************/
+
+//********************************************** Raycast **********************************************//
 
 typedef struct  Ray
 {
@@ -172,8 +173,8 @@ typedef struct  Ray3
 	Vector3	direction;
 }               Ray3;
 
-/******************************************************************************/
-// Color data type //
+
+//****************************************** Color data type ******************************************//
 
 typedef struct  Color
 {
@@ -185,45 +186,45 @@ typedef struct  Color
 
 typedef struct  Image
 {
-	void	*data;         // Image raw data
-	int		width;          // Image base width
-	int		height;         // Image base height
-	int		mipmaps;        // Mipmap levels, 1 by default
-	int		format;         // Data format (PixelFormat type)
+	void	*data;         			// Image raw data
+	int		width;          		// Image base width
+	int		height;         		// Image base height
+	int		mipmaps;        		// Mipmap levels, 1 by default
+	int		format;         		// Data format (PixelFormat type)
 }               Image;
 
 typedef struct  Texture2D
 {
-	uint	id;    // OpenGL texture id
-	int		width;          // Texture base width
-	int		height;         // Texture base height
-	int		mipmaps;        // Mipmap levels, 1 by default
-	int		format;         // Data format (PixelFormat type)
+	uint	id;    					// OpenGL texture id
+	int		width;          		// Texture base width
+	int		height;         		// Texture base height
+	int		mipmaps;        		// Mipmap levels, 1 by default
+	int		format;         		// Data format (PixelFormat type)
 }               Texture2D;
 
 typedef struct  RenderTexture2D
 {
-	uint		id;            	  // OpenGL Framebuffer Object (FBO) id
-	Texture2D	texture;          // Color buffer attachment texture
-	Texture2D	depth;            // Depth buffer attachment texture
+	uint		id;            	  	// OpenGL Framebuffer Object (FBO) id
+	Texture2D	texture;          	// Color buffer attachment texture
+	Texture2D	depth;            	// Depth buffer attachment texture
 }               RenderTexture2D;
 
 typedef struct  Texture3D
 {
-	uint	id;    // OpenGL texture id
-	int		width;          // Texture base width
-	int		height;         // Texture base height
-	int		depth;          // Texture base depth
-	int		mipmaps;        // Mipmap levels, 1 by default
-	int		format;         // Data format (PixelFormat type)
+	uint	id;    					// OpenGL texture id
+	int		width;          		// Texture base width
+	int		height;         		// Texture base height
+	int		depth;          		// Texture base depth
+	int		mipmaps;       			// Mipmap levels, 1 by default
+	int		format;         		// Data format (PixelFormat type)
 }               Texture3D;
 
 typedef struct  TextureCubemap
 {
-	uint	id;    // OpenGL texture id
-	int		size;           // Texture base size (cubemap width/height)
-	int		mipmaps;        // Mipmap levels, 1 by default
-	int		format;         // Data format (PixelFormat type)
+	uint	id;    					// OpenGL texture id
+	int		size;           		// Texture base size (cubemap width/height)
+	int		mipmaps;        		// Mipmap levels, 1 by default
+	int		format;         		// Data format (PixelFormat type)
 }               TextureCubemap;
 
 typedef struct  NPatchInfo
@@ -231,49 +232,36 @@ typedef struct  NPatchInfo
 	// Source image rectangle
 	Rectangle	sourceRec;
 	// Nine-patch layout info
-	int			left;       // left border offset
-	int			top;        // top border offset
-	int			right;      // right border offset
-	int			bottom;     // bottom border offset
-	int			type;       // layout of the 9-patch: 3x3, 1x3 or 3x1
+	int			left;       		// left border offset
+	int			top;        		// top border offset
+	int			right;      		// right border offset
+	int			bottom;     		// bottom border offset
+	int			type;       		// layout of the 9-patch: 3x3, 1x3 or 3x1
 }               NPatchInfo;
 
-/******************************************************************************/
-// Vertex data definning types //
 
-typedef struct  NPatchInfo
-{
-	// Source image rectangle
-	Rectangle	sourceRec;
-	// Nine-patch layout info
-	int			left;       // left border offset
-	int			top;        // top border offset
-	int			right;      // right border offset
-	int			bottom;     // bottom border offset
-	int			type;       // layout of the 9-patch: 3x3, 1x3 or 3x1
-}               NPatchInfo;
+//************************************ Vertex data definning types ************************************//
 
 typedef struct  CharInfo
 {
-	int		value;          // Character value (Unicode)
-	int		offsetX;        // Character offset X when drawing
-	int		offsetY;        // Character offset Y when drawing
-	int		advanceX;       // Character advance position X
-	Image	image;        // Character image data
+	int		value;          	// Character value (Unicode)
+	int		offsetX;        	// Character offset X when drawing
+	int		offsetY;        	// Character offset Y when drawing
+	int		advanceX;       	// Character advance position X
+	Image	image;        		// Character image data
 }               CharInfo;
 
-typedef struct  Font
+typedef struct  _Font
 {
 	int			baseSize;       // Base size (default chars height)
 	int			charsCount;     // Number of characters
-	Texture2D	texture;  // Characters texture atlas
-	Rectangle	*recs;    // Characters rectangles in texture
-	CharInfo	*chars;    // Characters info data
-}               Font;
+	Texture2D	texture;  		// Characters texture atlas
+	Rectangle	*recs;    		// Characters rectangles in texture
+	CharInfo	*chars;    		// Characters info data
+}               _Font;
 
 
-/******************************************************************************/
-// Shader and material properties data types //
+//***************************** Shader and material properties data types *****************************//
 
 typedef struct  Mesh
 {
@@ -281,68 +269,82 @@ typedef struct  Mesh
 	int		triangleCount;      // Number of triangles stored (indexed or not)
 
 	// Default vertex data
-	float	*vertices;        // Vertex position (XYZ - 3 components per vertex) (shader-location = 0)
-	float	*texcoords;       // Vertex texture coordinates (UV - 2 components per vertex) (shader-location = 1)
-	float	*texcoords2;      // Vertex second texture coordinates (useful for lightmaps) (shader-location = 5)
-	float	*normals;         // Vertex normals (XYZ - 3 components per vertex) (shader-location = 2)
-	float	*tangents;        // Vertex tangents (XYZW - 4 components per vertex) (shader-location = 4)
-	uchar	*colors;  // Vertex colors (RGBA - 4 components per vertex) (shader-location = 3)
-	ushort	*indices;// Vertex indices (in case vertex data comes indexed)
+	float	*vertices;     		// Vertex position (XYZ - 3 components per vertex) (shader-location = 0)
+	float	*texcoords;    		// Vertex texture coordinates (UV - 2 components per vertex) (shader-location = 1)
+	float	*texcoords2;   		// Vertex second texture coordinates (useful for lightmaps) (shader-location = 5)
+	float	*normals;      		// Vertex normals (XYZ - 3 components per vertex) (shader-location = 2)
+	float	*tangents;     		// Vertex tangents (XYZW - 4 components per vertex) (shader-location = 4)
+	uchar	*colors;  			// Vertex colors (RGBA - 4 components per vertex) (shader-location = 3)
+	ushort	*indices;			// Vertex indices (in case vertex data comes indexed)
 
 	// Animation vertex data
-	float	*animVertices;    // Animated vertex positions (after bones transformations)
-	float	*animNormals;     // Animated normals (after bones transformations)
+	float	*animVertices;    	// Animated vertex positions (after bones transformations)
+	float	*animNormals;     	// Animated normals (after bones transformations)
 	int		*boneIds;           // Vertex bone ids, up to 4 bones influence by vertex (skinning)
-	float	*boneWeights;     // Vertex bone weight, up to 4 bones influence by vertex (skinning)
+	float	*boneWeights;     	// Vertex bone weight, up to 4 bones influence by vertex (skinning)
 
 	// OpenGL identifiers
-	uint	vaoId;     // OpenGL Vertex Array Object id
-	uint	*vboId;    // OpenGL Vertex Buffer Objects id (default vertex data)
+	uint	vaoId;     			// OpenGL Vertex Array Object id
+	uint	*vboId;    			// OpenGL Vertex Buffer Objects id (default vertex data)
 }               Mesh;
 
 typedef struct  Shader
 {
-	uint	id;        // Shader program id
+	uint	id;        			// Shader program id
 	int		*locs;              // Shader locations array (MAX_SHADER_LOCATIONS)
 }               Shader;
 
 typedef struct  MaterialMap
 {
-	Texture2D texture;      // Material map texture
-	Color	color;            // Material map color
-	float	value;            // Material map value
+	Texture2D texture;      	// Material map texture
+	Color	color;            	// Material map color
+	float	value;            	// Material map value
 }               MaterialMap;
 
 typedef struct  Material
 {
-	Shader		shader;          // Material shader
-	MaterialMap	*maps;      // Material maps array (MAX_MATERIAL_MAPS)
-	float		*params;          // Material generic parameters (if required)
+	Shader		shader;         // Material shader
+	MaterialMap	*maps;      	// Material maps array (MAX_MATERIAL_MAPS)
+	float		*params;       	// Material generic parameters (if required)
 }               Material;
 
 typedef struct  BoneInfo
 {
-	char	name[32];          // Bone name
+	char	name[32];          	// Bone name
 	int		parent;             // Bone parent
 }               BoneInfo;
 
-/******************************************************************************/
-// Camera data types //
+
+//***************************************** Camera data types *****************************************//
 
 typedef struct  Camera2D
 {
-	Vector2	offset;     // Camera offset (displacement from target)
-	Vector2	target;     // Camera target (rotation and zoom origin)
-	float	rotation;     // Camera rotation in degrees
-	float	zoom;         // Camera zoom (scaling), should be 1.0f by default
+	Vector2	offset;     	// Camera offset (displacement from target)
+	Vector2	target;     	// Camera target (rotation and zoom origin)
+	float	rotation;     	// Camera rotation in degrees
+	float	zoom;         	// Camera zoom (scaling), should be 1.0f by default
 }               Camera2D;
 
 typedef struct  Camera3D
 {
-	Vector3	position;   // Camera position
-	Vector3	target;     // Camera target it looks-at
-	Vector3	up;         // Camera up vector (rotation over its axis)
-	float	fovy;         // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
+	Vector3	position;   	// Camera position
+	Vector3	target;     	// Camera target it looks-at
+	Vector3	up;         	// Camera up vector (rotation over its axis)
+	float	fovy;         	// Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
 	int		type;           // Camera type, defines projection type: CAMERA_PERSPECTIVE or CAMERA_ORTHOGRAPHIC
 }               Camera3D;
 
+
+//******************************************************************************************************//
+//												Functions									    		//
+//******************************************************************************************************//
+
+//***************************** Open, Read, write and Close file functions *****************************//
+
+static std::vector<char>	readFile(const std::string& filename);
+
+
+//***************************************** Pipeline functions *****************************************//
+
+VkShaderModule	createShaderModule(ProgramGestion *engine, const std::vector<char> &code);
+void			createGraphicsPipeline(ProgramGestion *engine);

@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/30 21:36:58 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/31 14:45:05 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,10 +39,11 @@
 #include <algorithm>
 #include <set>
 #include <map>
+#include <fstream>
 
 
 
-#define WIDTH 1600
+#define WIDTH 1500
 #define HEIGHT 920
 
 const std::vector<const char*> validationLayers = {
@@ -96,7 +97,14 @@ class ProgramGestion
 
 	// Public Methods //
 	public:
-		void	run(std::string name, bool resizeable);
+		void		run(std::string name, bool resizeable);
+
+	// Setters//
+
+	// Getters//
+		// VkDevice	getDevice() const;
+		// VkExtent2D	getSwapChainExtent() const;
+		// VkPipelineLayout	*getPipelineLeyout();	
 
 	/****************************************************************************************/
 
@@ -145,12 +153,23 @@ class ProgramGestion
 						*pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 		
 		void		populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-		
-	/****************************************************************************************/
-	// Pipeline //
-		void	createGraphicsPipeline();
 	
 	/****************************************************************************************/
+	// Pipeline functions //
+
+		VkShaderModule	createShaderModule(const std::vector<char> &code);
+		void			createGraphicsPipeline();
+		void			createRenderPass();
+		void			createFramebuffers();
+
+	/****************************************************************************************/
+	// Command pool and buffer //
+		void	recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		void	createCommandBuffers();
+		void	createCommandPool();
+
+		void	createSyncObjects();
+		void	drawFrame();
 					
 	// Private Attributes //
 	private:
@@ -171,4 +190,18 @@ class ProgramGestion
 		VkSwapchainKHR				swapChain;				//- Stock swap chain -//
 		VkExtent2D					swapChainExtent; 		//- Stock swap chain extent -//
 		VkFormat					swapChainImageFormat;	//- Stock swap chain image format -//
+		
+		VkRenderPass 				renderPass;				//- Stock render pass -//
+		VkPipelineLayout			pipelineLayout;			//- Stock pipeline layout -//
+		VkPipeline					graphicsPipeline;		//- Stock graphics pipeline -//
+		std::vector<VkFramebuffer>	swapChainFramebuffers;	//- Stock swap chain framebuffers -//
+
+		// Command buffers //
+		VkCommandPool				commandPool;			//- Stock command pool -//
+		VkCommandBuffer				commandBuffer;			//- Stock command buffer -//
+
+		// Stocking semaphores //
+		VkSemaphore					imageAvailableSemaphore;	//- Stock image available semaphore -//
+		VkSemaphore					renderFinishedSemaphore;	//- Stock render finished semaphore -//
+		VkFence						inFlightFence;				//- Stock in flight fence -//
 };

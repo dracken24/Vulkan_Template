@@ -15,8 +15,31 @@
     fonction Vulkan pour appliquer des opérations supplémentaires. Les opérations courantes dans
     les couches de validation sont :
 
-*Vérification des valeurs des paramètres par rapport à la spécification pour détecter une mauvaise utilisation
-*Suivi de la création et de la destruction d'objets pour trouver des fuites de ressources
-*Vérification de la sécurité des threads en suivant les threads d'où proviennent les appels
-*Journalisation de chaque appel et de ses paramètres sur la sortie standard
-*Le traçage de Vulkan appelle au profilage et à la relecture
+    *Vérification des valeurs des paramètres par rapport à la spécification pour détecter une mauvaise utilisation
+    *Suivi de la création et de la destruction d'objets pour trouver des fuites de ressources
+    *Vérification de la sécurité des threads en suivant les threads d'où proviennent les appels
+    *Journalisation de chaque appel et de ses paramètres sur la sortie standard
+    *Le traçage de Vulkan appelle au profilage et à la relecture
+
+-Les commandes dans Vulkan, comme les opérations de dessin et les transferts de mémoire,
+    ne sont pas exécutées directement à l'aide d'appels de fonction. Vous devez enregistrer
+    toutes les opérations que vous souhaitez effectuer dans les objets du tampon de commandes.
+    L'avantage de ceci est que lorsque nous sommes prêts à dire à Vulkan ce que nous voulons
+    faire, toutes les commandes sont soumises ensemble et Vulkan peut traiter plus efficacement
+    les commandes car elles sont toutes disponibles ensemble. De plus, cela permet à l'enregistrement
+    des commandes de se produire dans plusieurs threads si vous le souhaitez.
+
+-À un niveau élevé, le rendu d'un cadre dans Vulkan consiste en un ensemble commun d'étapes :
+
+    *Attendez que l'image précédente se termine
+    *Acquérir une image de la chaîne d'échange
+    *Enregistrez un tampon de commande qui dessine la scène sur cette image
+    *Soumettez le tampon de commande enregistré
+    *Présenter l'image de la chaîne d'échange
+
+-il y a un certain nombre d'événements que nous devons ordonner explicitement parce qu'ils
+    se produisent sur le GPU, tels que :
+
+    *Acquérir une image de la chaîne d'échange
+    *Exécuter des commandes qui s'appuient sur l'image acquise
+    *Présentez cette image à l'écran pour la présentation, en la renvoyant à la chaîne d'échange
