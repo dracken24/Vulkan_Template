@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:20:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/30 21:01:27 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/30 21:42:09 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,6 +78,8 @@ void	ProgramGestion::initVulkan()
     pickPhysicalDevice();
     createLogicalDevice();
 	createSwapChain();
+	createImageViews();
+	createGraphicsPipeline();
 }
 
 void	ProgramGestion::mainLoop()
@@ -90,9 +92,16 @@ void	ProgramGestion::mainLoop()
 
 void	ProgramGestion::cleanup()
 {
+	// Destroy swap chain //
+	for (auto imageView : swapChainImageViews)
+	{
+        vkDestroyImageView(device, imageView, nullptr);
+    }
+
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
 	vkDestroyDevice(device, nullptr);
 	
+	// Destroy debug messenger //
 	if (enableValidationLayers)
 	{
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
@@ -244,11 +253,11 @@ void	ProgramGestion::createLogicalDevice()
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
 		VkDeviceQueueCreateInfo	queueCreateInfo{};
 		
-		queueCreateInfo.sType =				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex =	queueFamily;
-		queueCreateInfo.queueCount =		1;
-		queueCreateInfo.pQueuePriorities =	&queuePriority;
-		queueCreateInfos.push_back(queueCreateInfo);
+		queueCreateInfo.sType =					VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;	// Type of structure //
+		queueCreateInfo.queueFamilyIndex =		queueFamily;								// Index of the queue family to create a queue from //
+		queueCreateInfo.queueCount =			1;											// Number of queues to create //
+		queueCreateInfo.pQueuePriorities =		&queuePriority;								// Array of queue priorities //
+		queueCreateInfos.push_back(queueCreateInfo);										// Add queue create info to the vector //
 	}
 
 	VkPhysicalDeviceFeatures	deviceFeatures{};
@@ -429,14 +438,14 @@ void	ProgramGestion::createSwapChain()
 
 	// Create the swap chain //
 	VkSwapchainCreateInfoKHR		createInfo{};
-	createInfo.sType =				VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface =			surface;
-	createInfo.minImageCount =		imageCount;
-	createInfo.imageFormat =		surfaceFormat.format;
-	createInfo.imageColorSpace =	surfaceFormat.colorSpace;
-	createInfo.imageExtent =		extent;
-	createInfo.imageArrayLayers =	1;
-	createInfo.imageUsage =			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.sType =				VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;	// The type of the structure //
+	createInfo.surface =			surface;										// The surface to associate the swap chain with //
+	createInfo.minImageCount =		imageCount;										// The minimum number of images in the swap chain //
+	createInfo.imageFormat =		surfaceFormat.format;							// The format of the image //
+	createInfo.imageColorSpace =	surfaceFormat.colorSpace;						// The color space of the image //
+	createInfo.imageExtent =		extent;											// The size of the image //
+	createInfo.imageArrayLayers =	1;												// The number of layers each image consists of //
+	createInfo.imageUsage =			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;			// The bit field describing the intended usage of the image //
 
 	QueueFamilyIndices	indices = findQueueFamilies(physicalDevice);
 	uint32_t			queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -444,23 +453,23 @@ void	ProgramGestion::createSwapChain()
 	// If the graphics and present family are different, we need to use concurrent mode //
 	if (indices.graphicsFamily != indices.presentFamily)
 	{
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		createInfo.queueFamilyIndexCount = 2;
-		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;	// The image can be used across multiple queue families without explicit ownership transfers //
+		createInfo.queueFamilyIndexCount = 2;						// The number of queue families that will access this image //
+		createInfo.pQueueFamilyIndices = queueFamilyIndices;		// An array of queue family indices //
 	}
 	else
 	{
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0; // Optional
-		createInfo.pQueueFamilyIndices = nullptr; // Optional
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;	// An image is owned by one queue family at a time and ownership must be explicitly transfered before using it in another queue family //
+		createInfo.queueFamilyIndexCount = 0; // Optional			// The number of queue families that will access this image //
+		createInfo.pQueueFamilyIndices = nullptr; // Optional		// An array of queue family indices //
 	}
 
 	// If the swap chain is transformed, we need to specify how it should be transformed //
-	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createInfo.presentMode = presentMode;
-	createInfo.clipped = VK_TRUE;
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
+	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;	// The transformation to apply to the image as part of the presentation //
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;				// The alpha compositing mode to use with this swap chain //
+	createInfo.presentMode = presentMode;										// The presentation mode to use for the swap chain //
+	createInfo.clipped = VK_TRUE;												// Whether the images are clipped //
+	createInfo.oldSwapchain = VK_NULL_HANDLE;									// The old swap chain to replace //
 
 	if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
 	{
@@ -473,14 +482,43 @@ void	ProgramGestion::createSwapChain()
 	swapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
 
-	// Create the swap chain //
-	VkSwapchainKHR			swapChain;
-	std::vector<VkImage> 	swapChainImages;
-	VkFormat				swapChainImageFormat;
-	VkExtent2D				swapChainExtent;
-
 	swapChainImageFormat =	surfaceFormat.format;
 	swapChainExtent =		extent;
+}
+
+// Create the image views //
+void	ProgramGestion::createImageViews()
+{
+	// Resize the vector to the number of swap chain images //
+	swapChainImageViews.resize(swapChainImages.size());
+	for (size_t i = 0; i < swapChainImages.size(); i++)
+	{
+		
+		VkImageViewCreateInfo createInfo{};
+		
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;	// Specify the type of the structure //
+		createInfo.image = swapChainImages[i];							// Specify the image to create a view for //
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;					// Specify the type of the image view //
+		createInfo.format = swapChainImageFormat;						// Specify the format of the image data //
+
+		// Specify the components to use for color channel RGBA//
+		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+		// Specify the purpose of the image and which part of the image should be accessed //
+		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;	// The aspect of the image that the view is created for //
+		createInfo.subresourceRange.baseMipLevel = 0;						// The first mipmap level accessible to the view //
+		createInfo.subresourceRange.levelCount = 1;							// The number of mipmap levels (and array layers) accessible to the view //
+		createInfo.subresourceRange.baseArrayLayer = 0;						// The first array layer accessible to the view //
+		createInfo.subresourceRange.layerCount = 1;							// The number of array layers accessible to the view //
+
+		if (vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create image views!");
+		}
+	}
 }
 
 //*********************************************************************************//
@@ -491,6 +529,15 @@ void	ProgramGestion::createSurface()
 	{
 		throw std::runtime_error("failed to create window surface!");
 	}
+	
+}
+
+//*********************************************************************************//
+// Pipeline //
+
+void	ProgramGestion::createGraphicsPipeline()
+{
+	
 }
 
 //*********************************************************************************//
@@ -505,30 +552,30 @@ void	ProgramGestion::createInstance()
 
 	// Create the application info //
 	VkApplicationInfo appInfo =		{};
-	appInfo.sType =					VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName =		"DrackenLib";
-	appInfo.applicationVersion =	VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName =			"DrackEngine";
-	appInfo.engineVersion =			VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion =			VK_API_VERSION_1_0;
+	appInfo.sType =					VK_STRUCTURE_TYPE_APPLICATION_INFO;	// Specify the type of the structure //
+	appInfo.pApplicationName =		"DrackenLib";						// The name of the application //
+	appInfo.applicationVersion =	VK_MAKE_VERSION(1, 0, 0);			// The version of the application //
+	appInfo.pEngineName =			"DrackEngine";						// The name of the engine //
+	appInfo.engineVersion =			VK_MAKE_VERSION(1, 0, 0);			// The version of the engine //
+	appInfo.apiVersion =			VK_API_VERSION_1_0;					// The version of the Vulkan API //
 
 	VkInstanceCreateInfo createInfo =	{};
-	createInfo.sType =					VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo =		&appInfo;
+	createInfo.sType =					VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;	// Specify the type of the structure //
+	createInfo.pApplicationInfo =		&appInfo;								// The application info //
 
 	auto extensions = getRequiredExtensions();
-	createInfo.enabledExtensionCount =		static_cast<uint32_t>(extensions.size());
-	createInfo.ppEnabledExtensionNames =	extensions.data();
+	createInfo.enabledExtensionCount =		static_cast<uint32_t>(extensions.size());	// The number of extensions //
+	createInfo.ppEnabledExtensionNames =	extensions.data();							// The extensions //
 
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
 	// If validation layers are enabled, add them to the instance //
 	if (enableValidationLayers)
 	{
-		createInfo.enabledLayerCount =		static_cast<uint32_t>(validationLayers.size());
-		createInfo.ppEnabledLayerNames =	validationLayers.data();
+		createInfo.enabledLayerCount =		static_cast<uint32_t>(validationLayers.size());	// The number of layers //
+		createInfo.ppEnabledLayerNames =	validationLayers.data();						// The layers //
 
-		populateDebugMessengerCreateInfo(debugCreateInfo);
-		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
+		populateDebugMessengerCreateInfo(debugCreateInfo);									// The debug messenger create info //
+		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;			// The debug messenger create info //
 	}
 	else
 	{
@@ -575,9 +622,9 @@ bool	ProgramGestion::checkValidationLayerSupport()
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL	debugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
-    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    VkDebugUtilsMessageSeverityFlagBitsEXT	messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT	messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void* pUserData)
 {
 

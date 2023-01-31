@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/30 20:56:37 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/30 21:36:58 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,6 +124,7 @@ class ProgramGestion
 		QueueFamilyIndices			findQueueFamilies(VkPhysicalDevice device);
 		
 		void	createSwapChain();
+		void	createImageViews();
 
 	/****************************************************************************************/
 	// Surface //
@@ -146,6 +147,10 @@ class ProgramGestion
 		void		populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 		
 	/****************************************************************************************/
+	// Pipeline //
+		void	createGraphicsPipeline();
+	
+	/****************************************************************************************/
 					
 	// Private Attributes //
 	private:
@@ -155,11 +160,15 @@ class ProgramGestion
 		VkDebugUtilsMessengerEXT	debugMessenger;	//- Debug messenger -//
 		
 		VkPhysicalDevice			physicalDevice = VK_NULL_HANDLE; //- Stock graphic card -//	
-		VkSurfaceKHR				surface; 		//- Stock surface -//
-		VkDevice					device; 		//- Stock logical device -//
+		VkSurfaceKHR				surface; 				//- Stock surface -//
+		VkDevice					device; 				//- Stock logical device -//
 		
-		VkQueue						graphicsQueue;	//- Stock queue -//
-		VkQueue						presentQueue;	//- Stock queue -//
+		VkQueue						graphicsQueue;			//- Stock queue -//
+		VkQueue						presentQueue;			//- Stock queue -//
 
-		VkSwapchainKHR				swapChain;		//- Stock swap chain -//
+		std::vector<VkImageView>	swapChainImageViews;	//- Stock swap chain image views -//
+		std::vector<VkImage> 		swapChainImages;		//- Stock swap chain images -//
+		VkSwapchainKHR				swapChain;				//- Stock swap chain -//
+		VkExtent2D					swapChainExtent; 		//- Stock swap chain extent -//
+		VkFormat					swapChainImageFormat;	//- Stock swap chain image format -//
 };
