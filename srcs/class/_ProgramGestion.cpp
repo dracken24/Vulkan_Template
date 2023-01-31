@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:20:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/30 20:57:36 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/30 21:01:27 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -466,6 +466,21 @@ void	ProgramGestion::createSwapChain()
 	{
 		throw std::runtime_error("failed to create swap chain!");
 	}
+
+	// Get the swap chain images //
+	std::vector<VkImage>	swapChainImages;
+	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+	swapChainImages.resize(imageCount);
+	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+
+	// Create the swap chain //
+	VkSwapchainKHR			swapChain;
+	std::vector<VkImage> 	swapChainImages;
+	VkFormat				swapChainImageFormat;
+	VkExtent2D				swapChainExtent;
+
+	swapChainImageFormat =	surfaceFormat.format;
+	swapChainExtent =		extent;
 }
 
 //*********************************************************************************//
