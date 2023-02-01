@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   _ProgramGestion.hpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: nadesjar <dracken24@gmail.com>             +#+  +:+       +#+        */
+/*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/01 12:46:50 by nadesjar         ###   ########.fr       */
+/*   Updated: 2023/02/01 12:50:48 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,7 +141,6 @@ class ProgramGestion
 	// Uniform buffer object or UBO//
 	struct UniformBufferObject
 	{
-		glm::vec2 foo;
 		glm::mat4 model;
 		glm::mat4 view;
 		glm::mat4 proj;
