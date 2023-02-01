@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/01 12:50:48 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/01 16:57:28 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,29 +23,30 @@
 	#define GLFW_EXPOSE_NATIVE_X11
 #endif
 
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLFW_INCLUDE_VULKAN
 #define GLM_FORCE_RADIANS
-
-#include <vulkan/vulkan.hpp>
-// #include <GLFW/glfw3native.h>
-#include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <vulkan/vulkan.hpp>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-// #include <GL/glext.h>
 
-#include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+// #include <stb_image.h>
+
+#include <algorithm>
 #include <stdexcept>
-#include <vector>
-#include <cstring>
-#include <cstdlib>
+#include <iostream>
 #include <optional>
 #include <cstdint>
+#include <cstring>
+#include <cstdlib>
+#include <fstream>
+#include <vector>
 #include <limits>
-#include <algorithm>
+#include <chrono>
 #include <set>
 #include <map>
-#include <fstream>
-#include <chrono>
 
 
 
@@ -141,9 +142,10 @@ class ProgramGestion
 	// Uniform buffer object or UBO//
 	struct UniformBufferObject
 	{
-		glm::mat4 model;
-		glm::mat4 view;
-		glm::mat4 proj;
+		alignas(16)glm::vec2 foo;
+		alignas(16)glm::mat4 model;
+		alignas(16)glm::mat4 view;
+		alignas(16)glm::mat4 proj;
 	};
 
 	// Uniform buffer square object contnant 2 triangles //

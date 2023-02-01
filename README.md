@@ -46,10 +46,20 @@
     *Exécuter des commandes qui s'appuient sur l'image acquise
     *Présentez cette image à l'écran pour la présentation, en la renvoyant à la chaîne d'échange
 
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+NOTE:
+------------------------------------------------------
+
+Plusieurs sets de descripteurs
+Comme on a pu le voir dans les en-têtes de certaines fonctions, il est possible de lier plusieurs sets de descripteurs en même temps. Vous devez fournir une organisation pour chacun des sets pendant la mise en place de l'organisation de la pipeline. Les shaders peuvent alors accéder aux descripteurs de la manière suivante :
+
+layout(set = 0, binding = 0) uniform UniformBufferObject { ... }
+Vous pouvez utiliser cette possibilité pour placer dans différents sets les descripteurs dépendant d'objets et les descripteurs partagés. De cette manière vous éviter de relier constemment une partie des descripteurs, ce qui peut être plus performant.
 
 ----------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------
-Optimisation:
+OPTIMISATION:
 ------------------------------------------------------
 
 #1:
