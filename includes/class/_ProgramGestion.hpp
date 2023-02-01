@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/31 19:21:13 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/31 20:58:45 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,10 +24,14 @@
 #endif
 
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#define GLM_FORCE_RADIANS
+
 #include <vulkan/vulkan.hpp>
-#include <GLFW/glfw3native.h>
+// #include <GLFW/glfw3native.h>
+#include <GLFW/glfw3.h>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
+// #include <GL/glext.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -41,18 +45,26 @@
 #include <set>
 #include <map>
 #include <fstream>
+#include <chrono>
 
 
 
 #define WIDTH 1500
 #define HEIGHT 920
 
+// Validation layers //
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
+// Device extensions //
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
+// Vertex data //
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0
 };
 
 #ifdef NDEBUG
@@ -126,10 +138,20 @@ class ProgramGestion
 		}
 	};
 
+	// Uniform buffer object or UBO//
+	struct UniformBufferObject
+	{
+		glm::mat4 model;
+		glm::mat4 view;
+		glm::mat4 proj;
+	};
+
+	// Uniform buffer square object contnant 2 triangles //
 	const std::vector<Vertex> vertices = {
-		{{0.0f, -0.5f}, {1.0f, 0.0f, 1.0f}}, 		// Upper corner //
-		{{0.5f, 0.5f}, {0.0f, 0.80f, 0.80f}},		// Right corner //
-		{{-0.5f, 0.5f}, {0.0f, 0.80f, 0.80f}}		// Left corner //
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},		// Bottom left corner //
+		{{0.5f, -0.5f}, {0.0f, 0.80f, 0.80f}},		// Bottom right corner //
+		{{0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}},			// Upper right corner //
+		{{-0.5f, 0.5f}, {0.0f, 0.80f, 0.80f}}		// Upper left corner //
 	};
 
 	//******************************************************************************************************//
@@ -225,9 +247,7 @@ class ProgramGestion
 		void	createSyncObjects();
 		void	drawFrame();
 
-		void	createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-					VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-
+		// Callback //
 		static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 		{
 			auto app = reinterpret_cast<ProgramGestion*>(glfwGetWindowUserPointer(window));
@@ -236,8 +256,22 @@ class ProgramGestion
 	
 	//******************************************************************************************************//
 	// Vertex buffer //
-	void		createVertexBuffer();
-	uint32_t	findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		void		createVertexBuffer();
+		uint32_t	findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		void		copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+		void		createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+						VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		
+	//******************************************************************************************************//
+	// Index buffer //
+		void		createIndexBuffer();
+
+	// Uniform buffer //
+		void		updateUniformBuffer(uint32_t currentImage);
+		void		createDescriptorSetLayout();
+		void		createUniformBuffers();
+		void		createDescriptorPool();
+		void		createDescriptorSets();
 	
 	//******************************************************************************************************//
 	//												Variables									    		//
@@ -264,6 +298,7 @@ class ProgramGestion
 		VkFormat					swapChainImageFormat;	//- Stock swap chain image format -//
 		
 		VkRenderPass 				renderPass;				//- Stock render pass -//
+		VkDescriptorSetLayout		descriptorSetLayout;	//- Stock descriptor set layout -//
 		VkPipelineLayout			pipelineLayout;			//- Stock pipeline layout -//
 		VkPipeline					graphicsPipeline;		//- Stock graphics pipeline -//
 		std::vector<VkFramebuffer>	swapChainFramebuffers;	//- Stock swap chain framebuffers -//
@@ -279,6 +314,15 @@ class ProgramGestion
 		
 		bool						framebufferResized = false;	//- Stock framebuffer resized -//
 		uint32_t					currentFrame = 0;			//- Stock current frame -//
+		
 		VkBuffer					vertexBuffer;				//- Stock vertex buffer -//
 		VkDeviceMemory				vertexBufferMemory;			//- Stock vertex buffer memory -//
+		VkBuffer					indexBuffer;				//- Stock index buffer -//
+		VkDeviceMemory				indexBufferMemory;			//- Stock index buffer memory -//
+
+		std::vector<VkBuffer>			uniformBuffers;				//- Stock uniform buffer -//
+		std::vector<VkDeviceMemory>		uniformBuffersMemory;		//- Stock uniform buffer memory -//
+		std::vector<void*>				uniformBuffersMapped;		//- Stock uniform buffer mapped -//
+		VkDescriptorPool				descriptorPool;				//- Stock descriptor pool -//
+		std::vector<VkDescriptorSet>	descriptorSets;				//- Stock descriptor set -//
 };

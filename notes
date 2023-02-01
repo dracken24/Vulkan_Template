@@ -46,8 +46,11 @@
 
 
 ----------------------------------------------------------------------------------------
-DEFIT
+----------------------------------------------------------------------------------------
+Optimisation:
+------------------------------------------------------
 
+#1:
 La commande de copie de tampon nécessite une famille de files d'attente qui prend en charge
 les opérations de transfert, ce qui est indiqué à l'aide de VK_QUEUE_TRANSFER_BIT.
 La bonne nouvelle est que toute famille de files d'attente avec VK_QUEUE_GRAPHICS_BIT ou
@@ -70,3 +73,33 @@ les modifications suivantes à votre programme :
 
 C'est un peu de travail, mais cela vous en apprendra beaucoup sur la façon dont les ressources
     sont partagées entre les familles de file d'attente.
+
+------------------------------------------------------
+
+#2
+Il convient de noter que dans une application du monde réel, vous n'êtes pas censé appeler
+vkAllocateMemorychaque tampon individuel. Le nombre maximal d'allocations de mémoire simultanées
+est limité par la maxMemoryAllocationCount limite de périphérique physique, qui peut être aussi
+faible que 4096même sur du matériel haut de gamme comme une NVIDIA GTX 1080. La bonne façon d'allouer
+de la mémoire pour un grand nombre d'objets en même temps est de créez un alternateur personnalisé
+qui divise une allocation unique entre plusieurs objets différents en utilisant les offsetparamètres
+que nous avons vus dans de nombreuses fonctions.
+
+Vous pouvez soit implémenter vous-même un tel alternateur, soit utiliser la bibliothèque
+VulkanMemoryAllocator fournie par l'initiative GPUOpen. Cependant, pour ce didacticiel, vous pouvez
+utiliser une allocation distincte pour chaque ressource, car nous ne serons pas près d'atteindre
+l'une de ces limites pour le moment.
+
+------------------------------------------------------
+
+#3
+
+Le chapitre précédent a déjà mentionné que vous devriez allouer plusieurs ressources comme des tampons
+à partir d'une seule allocation de mémoire, mais en fait, vous devriez aller plus loin. Les
+développeurs de pilotes recommandent également de stocker plusieurs tampons, tels que le tampon de
+vertex et d'index, dans un seul VkBufferet d'utiliser des décalages dans des commandes telles que
+vkCmdBindVertexBuffers. L'avantage est que vos données sont plus conviviales pour le cache dans ce cas,
+car elles sont plus proches les unes des autres. Il est même possible de réutiliser le même morceau de
+mémoire pour plusieurs ressources si elles ne sont pas utilisées lors des mêmes opérations de rendu,
+à condition bien sûr de rafraîchir leurs données. C'est ce qu'on appelle l' aliasing et certaines
+fonctions Vulkan ont des indicateurs explicites pour spécifier que vous voulez faire cela.
