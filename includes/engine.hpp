@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 21:41:29 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/31 12:58:40 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/01 00:37:35 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -178,10 +178,10 @@ typedef struct  Ray3
 
 typedef struct  Color
 {
-	uchar	r;
-	uchar	g;
-	uchar	b;
-	uchar	a;
+	uint	r;
+	uint	g;
+	uint	b;
+	uint	a;
 }               Color;
 
 typedef struct  Image
