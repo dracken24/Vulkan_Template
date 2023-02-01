@@ -6,7 +6,7 @@
 #    By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/08/23 13:22:35 by nadesjar          #+#    #+#              #
-#    Updated: 2023/01/31 14:30:37 by dracken24        ###   ########.fr        #
+#    Updated: 2023/01/31 19:10:28 by dracken24        ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -28,7 +28,7 @@ CFLAGS			= -std=c++17 -I$(VULKAN_SDK_PATH)/include \
 				
 LDFLAGS 		= -L$(VULKAN_SDK_PATH)/lib `pkg-config --static --libs glfw3` -lvulkan -lGL
 
-NAME			= Scop
+NAME			= DrackenLib
 
 # ------------------------------- Compilation -------------------------------- #
 
@@ -58,15 +58,15 @@ git:
 # --------------------------------- Messages --------------------------------- #
 
 msg_in:
-	@echo $L"COMPILATION DE Scop EN COURS..."$W
+	@echo $L"COMPILATION DE DrackenLib EN COURS..."$W
 
 msg_out:
-	@echo $L"\nScop READY !!!\n"$W
+	@echo $L"\nDrackenLib READY !!!\n"$W
 
 signat:
 	@echo "$G\n\|/~---~---~---~---~---~---~---~---~---~---~---~---~---~---~---~---~---~\|/"
 	@echo " |             ---------------------------------------------             |"
-	@echo " |             *--*   $LPROJET: Scop      PAR: NADESJAR$G   *--*             |"
+	@echo " |             *--* $LPROJET: DrackenLib    PAR: NADESJAR$G *--*             |"
 	@echo " |             ---------------------------------------------             |"
 	@echo "/|\~---~---~---~---~---~---~---~---~---~---~---~---~---~---~---~---~---~/|\ \n$W"
 	

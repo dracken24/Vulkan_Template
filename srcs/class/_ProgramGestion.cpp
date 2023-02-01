@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:20:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/31 14:36:31 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/31 19:27:55 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,9 +18,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL	debugCallback(VkDebugUtilsMessageSeverityF
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
 
-/**********************************************************************************************/
+//******************************************************************************************************//
+//										Constructor - Destructor							    		//
+//******************************************************************************************************//
 
-// Constructor - Destructor //
+
 
 ProgramGestion::ProgramGestion() :
 window(nullptr)
@@ -47,8 +49,9 @@ ProgramGestion  &ProgramGestion::operator=(const ProgramGestion &src)
 	return *this;
 }
 
-/*********************************************************************************/
-// Public Methods //
+//******************************************************************************************************//
+//											Public Methods									    		//
+//******************************************************************************************************//
 
 void	ProgramGestion::run(std::string name, bool resizeable)
 {
@@ -58,9 +61,12 @@ void	ProgramGestion::run(std::string name, bool resizeable)
 	cleanup();
 }
 
-/* ************************************************************************** */
-// Private Methods: Global Gestion //
+//******************************************************************************************************//
+//											Private Methods									    		//
+//******************************************************************************************************//
 
+//---------------------------------- Private Methods: Global Gestion -----------------------------------//
+		
 void	ProgramGestion::initWindow(std::string name, bool resizeable)
 {
 	glfwInit();
@@ -69,21 +75,23 @@ void	ProgramGestion::initWindow(std::string name, bool resizeable)
 	glfwWindowHint(GLFW_RESIZABLE, resizeable);
 
 	window = glfwCreateWindow(WIDTH, HEIGHT, name.c_str(), nullptr, nullptr);
+	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
 
 void	ProgramGestion::initVulkan()
 {
-	createInstance();
-    setupDebugMessenger();
-    createSurface();
-    pickPhysicalDevice();
+	createInstance();			// Create Vulkan instance //
+    setupDebugMessenger();		
+    createSurface();			// Create surface for communication with selected GPU //
+    pickPhysicalDevice();		// Select GPU //
     createLogicalDevice();
 	createSwapChain();
 	createImageViews();
-	createRenderPass();
+	createRenderPass();	
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
+	createVertexBuffer();
 	createCommandBuffers();
 	createSyncObjects();
 }
@@ -100,47 +108,42 @@ void	ProgramGestion::mainLoop()
 
 void	ProgramGestion::cleanup()
 {
-	// Destroy semaphores //
-	vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
-    vkDestroyFence(device, inFlightFence, nullptr);
-	
-	vkDestroyCommandPool(device, commandPool, nullptr);
-	
-	// Destroy framebuffers //
-	for (auto framebuffer : swapChainFramebuffers)
+	cleanupSwapChain();
+
+	vkDestroyBuffer(device, vertexBuffer, nullptr);
+	vkFreeMemory(device, vertexBufferMemory, nullptr);
+
+    vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+    vkDestroyRenderPass(device, renderPass, nullptr);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-    }
-	
-	vkDestroyPipeline(device, graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-	vkDestroyRenderPass(device, renderPass, nullptr);
-	
-	// Destroy swap chain //
-	for (auto imageView : swapChainImageViews)
-	{
-        vkDestroyImageView(device, imageView, nullptr);
+        vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+        vkDestroyFence(device, inFlightFences[i], nullptr);
     }
 
-	vkDestroySwapchainKHR(device, swapChain, nullptr);
-	vkDestroyDevice(device, nullptr);
-	
-	// Destroy debug messenger //
-	if (enableValidationLayers)
+    vkDestroyCommandPool(device, commandPool, nullptr);
+
+    vkDestroyDevice(device, nullptr);
+
+    if (enableValidationLayers)
 	{
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
-	
-	vkDestroySurfaceKHR(instance, surface, nullptr);
-	vkDestroyInstance(instance, nullptr);
-	
-	glfwDestroyWindow(window);
-	glfwTerminate();
+
+    vkDestroySurfaceKHR(instance, surface, nullptr);
+    vkDestroyInstance(instance, nullptr);
+
+    glfwDestroyWindow(window);
+
+    glfwTerminate();
 }
 
-/****************************************************************************************/
-// Gestion GPU //
+//******************************************************************************************************//
+//-------------------------------------------- Gestion GPU ---------------------------------------------//
 
 //- Check if the graphic card is suitable - 'No member function' -//
 int rateDeviceSuitability(VkPhysicalDevice device)
@@ -246,6 +249,7 @@ bool	ProgramGestion::isDeviceSuitable(VkPhysicalDevice device)
 	return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
+//- Check if the graphic card support the extension -//
 bool	ProgramGestion::checkDeviceExtensionSupport(VkPhysicalDevice device)
 {
 	const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
@@ -267,6 +271,7 @@ bool	ProgramGestion::checkDeviceExtensionSupport(VkPhysicalDevice device)
     return requiredExtensions.empty();
 }
 
+//- Find the queue family -//
 void	ProgramGestion::createLogicalDevice()
 {
 	QueueFamilyIndices	indices = findQueueFamilies(physicalDevice);
@@ -318,10 +323,10 @@ void	ProgramGestion::createLogicalDevice()
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
-/****************************************************************************************/
-// Queue family //
+//******************************************************************************************************//
+//------------------------------------------- Queue family ---------------------------------------------//
 
-
+//- Find the queue family -//
 ProgramGestion::QueueFamilyIndices	ProgramGestion::findQueueFamilies(VkPhysicalDevice device)
 {
 	QueueFamilyIndices indices;
@@ -333,6 +338,7 @@ ProgramGestion::QueueFamilyIndices	ProgramGestion::findQueueFamilies(VkPhysicalD
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
 	int i = 0;
+	// Find queue family that support graphics //
 	for (const auto& queueFamily : queueFamilies)
 	{
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
@@ -396,6 +402,7 @@ VkSurfaceFormatKHR	ProgramGestion::chooseSwapSurfaceFormat(const std::vector<VkS
 {
 	for (const auto& availableFormat : availableFormats)
 	{
+		// If the format is VK_FORMAT_B8G8R8A8_SRGB and the color space is VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, then it is the best format //
 		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
 			&& availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
@@ -411,6 +418,7 @@ VkPresentModeKHR	ProgramGestion::chooseSwapPresentMode(const std::vector<VkPrese
 {
 	for (const auto& availablePresentMode : availablePresentModes)
 	{
+		// If the present mode is VK_PRESENT_MODE_MAILBOX_KHR, then it is the best present mode //
         if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
 		{
             return availablePresentMode;
@@ -423,6 +431,7 @@ VkPresentModeKHR	ProgramGestion::chooseSwapPresentMode(const std::vector<VkPrese
 // Choose the best resolution for the window //
 VkExtent2D	ProgramGestion::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
+	// If the current extent is at numeric limits, then the extent can vary //
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 	{
         return capabilities.currentExtent;
@@ -445,6 +454,7 @@ VkExtent2D	ProgramGestion::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capa
     }
 }
 
+// Create the swap chain //
 void	ProgramGestion::createSwapChain()
 {
     SwapChainSupportDetails	swapChainSupport = querySwapChainSupport(physicalDevice);
@@ -486,7 +496,7 @@ void	ProgramGestion::createSwapChain()
 	}
 	else
 	{
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;	// An image is owned by one queue family at a time and ownership must be explicitly transfered before using it in another queue family //
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;		// An image is owned by one queue family at a time and ownership must be explicitly transfered before using it in another queue family //
 		// createInfo.queueFamilyIndexCount = 0; // Optional			// The number of queue families that will access this image //
 		// createInfo.pQueueFamilyIndices = nullptr; // Optional		// An array of queue family indices //
 	}
@@ -505,7 +515,6 @@ void	ProgramGestion::createSwapChain()
 	}
 
 	// Get the swap chain images //
-	// std::vector<VkImage>	swapChainImages;
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
 	swapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
@@ -549,8 +558,44 @@ void	ProgramGestion::createImageViews()
 	}
 }
 
-//*********************************************************************************//
-// Create surface //
+void	ProgramGestion::cleanupSwapChain()
+{
+	for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
+	{
+        vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
+    }
+
+    for (size_t i = 0; i < swapChainImageViews.size(); i++)
+	{
+        vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+    }
+
+    vkDestroySwapchainKHR(device, swapChain, nullptr);
+}
+
+void	ProgramGestion::recreateSwapChain()
+{
+	int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    while (width == 0 || height == 0)
+	{
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+	
+	// Wait until the device is idle before recreating the swap chain //
+    vkDeviceWaitIdle(device);
+
+	cleanupSwapChain();
+
+    createSwapChain();
+    createImageViews();
+    createFramebuffers();
+}
+
+//******************************************************************************************************//
+//------------------------------------------ Create surface --------------------------------------------//
+
 void	ProgramGestion::createSurface()
 {
 	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
@@ -560,9 +605,10 @@ void	ProgramGestion::createSurface()
 	
 }
 
-//*********************************************************************************//
-// Create instance and debug messenger //
+//******************************************************************************************************//
+//-------------------------------- Create instance and debug messenger ---------------------------------//
 
+// Create the instance //
 void	ProgramGestion::createInstance()
 {
 	if (enableValidationLayers && !checkValidationLayerSupport())
@@ -580,8 +626,8 @@ void	ProgramGestion::createInstance()
 	appInfo.apiVersion =			VK_API_VERSION_1_0;					// The version of the Vulkan API //
 
 	VkInstanceCreateInfo createInfo =	{};
-	createInfo.sType =					VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;	// Specify the type of the structure //
-	createInfo.pApplicationInfo =		&appInfo;								// The application info //
+	createInfo.sType =					VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;			// Specify the type of the structure //
+	createInfo.pApplicationInfo =		&appInfo;										// The application info //
 
 	auto extensions = getRequiredExtensions();
 	createInfo.enabledExtensionCount =		static_cast<uint32_t>(extensions.size());	// The number of extensions //
@@ -622,7 +668,8 @@ bool	ProgramGestion::checkValidationLayerSupport()
     for (const char* layerName : validationLayers)
 	{
     	bool layerFound = false;
-
+		
+		// Check if the layer is in the availableLayers vector //
 		for (const auto& layerProperties : availableLayers)
 		{
 			if (strcmp(layerName, layerProperties.layerName) == 0)
@@ -641,6 +688,7 @@ bool	ProgramGestion::checkValidationLayerSupport()
 	return true;
 }
 
+// Get the required extensions //
 static VKAPI_ATTR VkBool32 VKAPI_CALL	debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT	messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT	messageType,
@@ -653,6 +701,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL	debugCallback(
     return VK_FALSE;
 }
 
+// Create the debug messenger //
 void	ProgramGestion::setupDebugMessenger()
 {
     if (!enableValidationLayers)
@@ -737,8 +786,6 @@ VkResult	ProgramGestion::CreateDebugUtilsMessengerEXT(VkInstance instance, const
 //												Draw										    		//
 //******************************************************************************************************//
 
-//*********************************************************************************//
-
 // Pipeline only for triangle //
 void	ProgramGestion::createGraphicsPipeline(void)
 {
@@ -764,12 +811,16 @@ void	ProgramGestion::createGraphicsPipeline(void)
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 	
+	auto bindingDescription = Vertex::getBindingDescription();
+	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+	
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	// vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	// vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -1035,16 +1086,19 @@ void	ProgramGestion::createCommandPool()
 // Create command buffer //
 void	ProgramGestion::createCommandBuffers()
 {
+	// Resize the command buffer //
+	commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
+	allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
 
-	if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS)
+    if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
 	{
-		throw std::runtime_error("failed to allocate command buffers!");
-	}
+        throw std::runtime_error("failed to allocate command buffers!");
+    }
 }
 
 // Record command buffer //
@@ -1078,6 +1132,8 @@ void	ProgramGestion::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 		// Link the pipeline to the command buffer //
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
+
+		// Set the viewport //
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -1087,15 +1143,22 @@ void	ProgramGestion::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
+		// Set the scissor //
 		VkRect2D scissor{};
 		scissor.offset = {0, 0};
 		scissor.extent = swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+		// Bind the vertex buffer //
+		VkBuffer vertexBuffers[] = {vertexBuffer};
+		VkDeviceSize offsets[] = {0};
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+		vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 
+	// End the render pass //
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to record command buffer!");
@@ -1105,65 +1168,177 @@ void	ProgramGestion::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 // Core for draw on screen //
 void	ProgramGestion::drawFrame()
 {
-	vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-	vkResetFences(device, 1, &inFlightFence);
-
+	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+	
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX,
+		imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-	vkResetCommandBuffer(commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
-	recordCommandBuffer(commandBuffer, imageIndex);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		recreateSwapChain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
+	
+    // Only reset the fence if we are submitting work
+	vkResetFences(device, 1, &inFlightFences[currentFrame]);
+
+	vkResetCommandBuffer(commandBuffers[currentFrame],  0);
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
+	// Wait for the image to be available //
+	VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
 	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
-	VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+	// Signal that the image is ready to be rendered //
+	VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS)
+	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
+	// Present the image //
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = signalSemaphores;
 
+	// Specify the swap chain to present the image to //
 	VkSwapchainKHR swapChains[] = {swapChain};
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 
 	presentInfo.pImageIndices = &imageIndex;
 
-	vkQueuePresentKHR(presentQueue, &presentInfo);
+	result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
+	{
+		framebufferResized = false;
+		recreateSwapChain();
+	}
+	else if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to present swap chain image!");
+	}
+
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 // Create semaphores //
 void	ProgramGestion::createSyncObjects()
 {
-	VkSemaphoreCreateInfo semaphoreInfo{};
+	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
+	// Create the semaphore info //
+    VkSemaphoreCreateInfo	semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	// Create the fence info //
+    VkFenceCreateInfo	fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-    vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
-    vkCreateFence(device, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS)
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		throw std::runtime_error("failed to create semaphores!");
+		// Create the semaphores //
+        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+		{
+
+            throw std::runtime_error("failed to create synchronization objects for a frame!");
+        }
+    }
+}
+
+//******************************************************************************************************//
+//											Vertex Buffers									    		//
+//******************************************************************************************************//
+
+// Create the vertex buffer //
+void	ProgramGestion::createVertexBuffer()
+{
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+		| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertexBuffer, vertexBufferMemory);
+
+	// Copy the vertex data to the vertex buffer //
+    void* data;
+    vkMapMemory(device, vertexBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, vertices.data(), (size_t) bufferSize);
+    vkUnmapMemory(device, vertexBufferMemory);
+}
+
+uint32_t	ProgramGestion::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties	memProperties;
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+	// Find the memory type that matches the requirements //
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	{
+		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+		{
+			return (i);
+		}
 	}
+
+	throw std::runtime_error("failed to find suitable memory type!");
+}
+
+void	ProgramGestion::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+			VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+    VkBufferCreateInfo	bufferInfo{};
+	// Size of the buffer //
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	
+	// Buffer will be used as a vertex buffer //
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	// Create the buffer //
+	if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+	{
+        throw std::runtime_error("failed to create vertex buffer!");
+    }
+
+	// Get the memory requirements for the buffer //
+	VkMemoryRequirements	memRequirements;
+	vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+	// Allocate the memory for the buffer //
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+	// Allocate the memory //
+	if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate vertex buffer memory!");
+	}
+
+	vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }

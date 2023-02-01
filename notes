@@ -43,3 +43,30 @@
     *Acquérir une image de la chaîne d'échange
     *Exécuter des commandes qui s'appuient sur l'image acquise
     *Présentez cette image à l'écran pour la présentation, en la renvoyant à la chaîne d'échange
+
+
+----------------------------------------------------------------------------------------
+DEFIT
+
+La commande de copie de tampon nécessite une famille de files d'attente qui prend en charge
+les opérations de transfert, ce qui est indiqué à l'aide de VK_QUEUE_TRANSFER_BIT.
+La bonne nouvelle est que toute famille de files d'attente avec VK_QUEUE_GRAPHICS_BIT ou
+VK_QUEUE_COMPUTE_BIT capacités prend déjà implicitement en charge les VK_QUEUE_TRANSFER_BITopérations.
+L'implémentation n'est pas obligée de l'énumérer explicitement queueFlagsdans ces cas.
+
+Si vous aimez les défis, vous pouvez toujours essayer d'utiliser une autre famille de
+files d'attente spécifiquement pour les opérations de transfert. Il vous demandera d'apporter
+les modifications suivantes à votre programme :
+
+-Modifiez QueueFamilyIndiceset findQueueFamiliesrecherchez explicitement une famille de
+    files d'attente avec le VK_QUEUE_TRANSFER_BITbit, mais pas le VK_QUEUE_GRAPHICS_BIT.
+-Modifier createLogicalDevicepour demander un handle vers la file d'attente de transfert
+    Créer un deuxième pool de commandes pour les tampons de commandes qui sont soumis sur la
+    famille de files d'attente de transfert
+-Modifiez les sharingModeressources en VK_SHARING_MODE_CONCURRENTet spécifiez à la fois
+    les graphiques et les familles de file d'attente de transfert
+-Soumettez toutes les commandes de transfert comme vkCmdCopyBuffer(que nous utiliserons dans ce chapitre)
+    à la file d'attente de transfert au lieu de la file d'attente graphique
+
+C'est un peu de travail, mais cela vous en apprendra beaucoup sur la façon dont les ressources
+    sont partagées entre les familles de file d'attente.

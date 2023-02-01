@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/31 14:45:05 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/31 19:21:13 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3native.h>
+#include <glm/glm.hpp>
 
 #include <iostream>
 #include <stdexcept>
@@ -60,10 +61,17 @@ const std::vector<const char*> deviceExtensions = {
     const bool enableValidationLayers = true;
 #endif
 
+//******************************************************************************************************//
+
+const int MAX_FRAMES_IN_FLIGHT = 2; // Max number of frames that can be in flight at the same time
+
+//******************************************************************************************************//
 
 class ProgramGestion
 {
-	/****************************************************************************************/
+	//******************************************************************************************************//
+	//												Structs										    		//
+	//******************************************************************************************************//
 	
 	// Queue family indices //
 	struct QueueFamilyIndices
@@ -85,6 +93,49 @@ class ProgramGestion
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
+	struct Vertex
+	{
+		glm::vec2 pos;
+		glm::vec3 color;
+
+		// Binding description //
+		static VkVertexInputBindingDescription getBindingDescription()
+		{
+			VkVertexInputBindingDescription bindingDescription{};
+			bindingDescription.binding = 0;
+			bindingDescription.stride = sizeof(Vertex);
+			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+			return bindingDescription;
+		}
+
+		static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
+		{
+			std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+			attributeDescriptions[0].binding = 0;
+			attributeDescriptions[0].location = 0;
+			attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+			attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+			attributeDescriptions[1].binding = 0;
+			attributeDescriptions[1].location = 1;
+			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+			return attributeDescriptions;
+		}
+	};
+
+	const std::vector<Vertex> vertices = {
+		{{0.0f, -0.5f}, {1.0f, 0.0f, 1.0f}}, 		// Upper corner //
+		{{0.5f, 0.5f}, {0.0f, 0.80f, 0.80f}},		// Right corner //
+		{{-0.5f, 0.5f}, {0.0f, 0.80f, 0.80f}}		// Left corner //
+	};
+
+	//******************************************************************************************************//
+	//												Functions									    		//
+	//******************************************************************************************************//
+
 	// Constructor - Destructor //
 	public:
 		ProgramGestion();
@@ -93,7 +144,7 @@ class ProgramGestion
 		
 		ProgramGestion	&operator=(const ProgramGestion &src);
 	
-	/****************************************************************************************/
+	//******************************************************************************************************//
 
 	// Public Methods //
 	public:
@@ -106,7 +157,7 @@ class ProgramGestion
 		// VkExtent2D	getSwapChainExtent() const;
 		// VkPipelineLayout	*getPipelineLeyout();	
 
-	/****************************************************************************************/
+	//******************************************************************************************************//
 
 	// Private Methods //
 	private:
@@ -115,7 +166,7 @@ class ProgramGestion
 		void	mainLoop();
 		void	cleanup();
 
-	/****************************************************************************************/
+	//******************************************************************************************************//
 	// GPU //
 		void	createLogicalDevice();
 		void	pickPhysicalDevice(); //- Find Graphic card -//
@@ -123,7 +174,7 @@ class ProgramGestion
 		bool	checkDeviceExtensionSupport(VkPhysicalDevice device);
 		bool	isDeviceSuitable(VkPhysicalDevice device);
 
-	/****************************************************************************************/
+	//******************************************************************************************************//
 	// Queue //
 		VkPresentModeKHR			chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkSurfaceFormatKHR 			chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -131,14 +182,17 @@ class ProgramGestion
 		SwapChainSupportDetails		querySwapChainSupport(VkPhysicalDevice device);
 		QueueFamilyIndices			findQueueFamilies(VkPhysicalDevice device);
 		
+		void	recreateSwapChain();
 		void	createSwapChain();
+		void	cleanupSwapChain();
+		
 		void	createImageViews();
 
-	/****************************************************************************************/
+	//******************************************************************************************************//
 	// Surface //
 		void	createSurface();
 
-	/****************************************************************************************/
+	//******************************************************************************************************//
 	// Instance creation and debug messages //
 		void	createInstance();
 		bool	checkValidationLayerSupport();
@@ -154,7 +208,7 @@ class ProgramGestion
 		
 		void		populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	
-	/****************************************************************************************/
+	//******************************************************************************************************//
 	// Pipeline functions //
 
 		VkShaderModule	createShaderModule(const std::vector<char> &code);
@@ -162,7 +216,7 @@ class ProgramGestion
 		void			createRenderPass();
 		void			createFramebuffers();
 
-	/****************************************************************************************/
+	//******************************************************************************************************//
 	// Command pool and buffer //
 		void	recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 		void	createCommandBuffers();
@@ -170,7 +224,25 @@ class ProgramGestion
 
 		void	createSyncObjects();
 		void	drawFrame();
-					
+
+		void	createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+					VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
+		static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+		{
+			auto app = reinterpret_cast<ProgramGestion*>(glfwGetWindowUserPointer(window));
+    		app->framebufferResized = true;
+		}
+	
+	//******************************************************************************************************//
+	// Vertex buffer //
+	void		createVertexBuffer();
+	uint32_t	findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	
+	//******************************************************************************************************//
+	//												Variables									    		//
+	//******************************************************************************************************//
+
 	// Private Attributes //
 	private:
 		GLFWwindow	*window;	//- Stock window -//
@@ -197,11 +269,16 @@ class ProgramGestion
 		std::vector<VkFramebuffer>	swapChainFramebuffers;	//- Stock swap chain framebuffers -//
 
 		// Command buffers //
-		VkCommandPool				commandPool;			//- Stock command pool -//
-		VkCommandBuffer				commandBuffer;			//- Stock command buffer -//
+		VkCommandPool					commandPool;			//- Stock command pool -//
+		std::vector<VkCommandBuffer>	commandBuffers;			//- Stock command buffer -//
 
 		// Stocking semaphores //
-		VkSemaphore					imageAvailableSemaphore;	//- Stock image available semaphore -//
-		VkSemaphore					renderFinishedSemaphore;	//- Stock render finished semaphore -//
-		VkFence						inFlightFence;				//- Stock in flight fence -//
+		std::vector<VkSemaphore>	imageAvailableSemaphores;	//- Stock image available semaphore -//
+		std::vector<VkSemaphore>	renderFinishedSemaphores;	//- Stock render finished semaphore -//
+		std::vector<VkFence>		inFlightFences;				//- Stock in flight fence -//
+		
+		bool						framebufferResized = false;	//- Stock framebuffer resized -//
+		uint32_t					currentFrame = 0;			//- Stock current frame -//
+		VkBuffer					vertexBuffer;				//- Stock vertex buffer -//
+		VkDeviceMemory				vertexBufferMemory;			//- Stock vertex buffer memory -//
 };
