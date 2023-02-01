@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/01/31 20:58:45 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/01/31 23:08:42 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -174,10 +174,7 @@ class ProgramGestion
 
 	// Setters//
 
-	// Getters//
-		// VkDevice	getDevice() const;
-		// VkExtent2D	getSwapChainExtent() const;
-		// VkPipelineLayout	*getPipelineLeyout();	
+	// Getters//	
 
 	//******************************************************************************************************//
 
@@ -279,46 +276,46 @@ class ProgramGestion
 
 	// Private Attributes //
 	private:
-		GLFWwindow	*window;	//- Stock window -//
-		VkInstance	instance;	//- Stock instance -//
+		GLFWwindow						*window;	//- Stock window -//
+		VkInstance						instance;	//- Stock instance -//
 		
-		VkDebugUtilsMessengerEXT	debugMessenger;	//- Debug messenger -//
+		VkDebugUtilsMessengerEXT		debugMessenger;	//- Debug messenger -//
 		
-		VkPhysicalDevice			physicalDevice = VK_NULL_HANDLE; //- Stock graphic card -//	
-		VkSurfaceKHR				surface; 				//- Stock surface -//
-		VkDevice					device; 				//- Stock logical device -//
+		VkPhysicalDevice				physicalDevice = VK_NULL_HANDLE; //- Stock graphic card -//	
+		VkSurfaceKHR					surface; 				//- Stock surface -//
+		VkDevice						device; 				//- Stock logical device -//
 		
-		VkQueue						graphicsQueue;			//- Stock queue -//
-		VkQueue						presentQueue;			//- Stock queue -//
+		VkQueue							graphicsQueue;			//- Stock queue -//
+		VkQueue							presentQueue;			//- Stock queue -//
 
-		std::vector<VkImageView>	swapChainImageViews;	//- Stock swap chain image views -//
-		std::vector<VkImage> 		swapChainImages;		//- Stock swap chain images -//
-		VkSwapchainKHR				swapChain;				//- Stock swap chain -//
-		VkExtent2D					swapChainExtent; 		//- Stock swap chain extent -//
-		VkFormat					swapChainImageFormat;	//- Stock swap chain image format -//
+		std::vector<VkImageView>		swapChainImageViews;	//- Stock swap chain image views -//
+		std::vector<VkImage> 			swapChainImages;		//- Stock swap chain images -//
+		VkSwapchainKHR					swapChain;				//- Stock swap chain -//
+		VkExtent2D						swapChainExtent; 		//- Stock swap chain extent -//
+		VkFormat						swapChainImageFormat;	//- Stock swap chain image format -//
 		
-		VkRenderPass 				renderPass;				//- Stock render pass -//
-		VkDescriptorSetLayout		descriptorSetLayout;	//- Stock descriptor set layout -//
-		VkPipelineLayout			pipelineLayout;			//- Stock pipeline layout -//
-		VkPipeline					graphicsPipeline;		//- Stock graphics pipeline -//
-		std::vector<VkFramebuffer>	swapChainFramebuffers;	//- Stock swap chain framebuffers -//
+		VkRenderPass 					renderPass;				//- Stock render pass -//
+		VkDescriptorSetLayout			descriptorSetLayout;	//- Stock descriptor set layout -//
+		VkPipelineLayout				pipelineLayout;			//- Stock pipeline layout -//
+		VkPipeline						graphicsPipeline;		//- Stock graphics pipeline -//
+		std::vector<VkFramebuffer>		swapChainFramebuffers;	//- Stock swap chain framebuffers -//
 
 		// Command buffers //
 		VkCommandPool					commandPool;			//- Stock command pool -//
 		std::vector<VkCommandBuffer>	commandBuffers;			//- Stock command buffer -//
 
 		// Stocking semaphores //
-		std::vector<VkSemaphore>	imageAvailableSemaphores;	//- Stock image available semaphore -//
-		std::vector<VkSemaphore>	renderFinishedSemaphores;	//- Stock render finished semaphore -//
-		std::vector<VkFence>		inFlightFences;				//- Stock in flight fence -//
+		std::vector<VkSemaphore>		imageAvailableSemaphores;	//- Stock image available semaphore -//
+		std::vector<VkSemaphore>		renderFinishedSemaphores;	//- Stock render finished semaphore -//
+		std::vector<VkFence>			inFlightFences;				//- Stock in flight fence -//
 		
-		bool						framebufferResized = false;	//- Stock framebuffer resized -//
-		uint32_t					currentFrame = 0;			//- Stock current frame -//
+		bool							framebufferResized = false;	//- Stock framebuffer resized -//
+		uint32_t						currentFrame = 0;			//- Stock current frame -//
 		
-		VkBuffer					vertexBuffer;				//- Stock vertex buffer -//
-		VkDeviceMemory				vertexBufferMemory;			//- Stock vertex buffer memory -//
-		VkBuffer					indexBuffer;				//- Stock index buffer -//
-		VkDeviceMemory				indexBufferMemory;			//- Stock index buffer memory -//
+		VkBuffer						vertexBuffer;				//- Stock vertex buffer -//
+		VkDeviceMemory					vertexBufferMemory;			//- Stock vertex buffer memory -//
+		VkBuffer						indexBuffer;				//- Stock index buffer -//
+		VkDeviceMemory					indexBufferMemory;			//- Stock index buffer memory -//
 
 		std::vector<VkBuffer>			uniformBuffers;				//- Stock uniform buffer -//
 		std::vector<VkDeviceMemory>		uniformBuffersMemory;		//- Stock uniform buffer memory -//
