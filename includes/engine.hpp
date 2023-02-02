@@ -6,11 +6,12 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 21:41:29 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/01 00:37:35 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/01 21:38:45 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef ENGINE_HPP
+# define ENGINE_HPP
 
 #include "./class/_ProgramGestion.hpp"
 
@@ -348,3 +349,5 @@ static std::vector<char>	readFile(const std::string& filename);
 
 VkShaderModule	createShaderModule(ProgramGestion *engine, const std::vector<char> &code);
 void			createGraphicsPipeline(ProgramGestion *engine);
+
+#endif

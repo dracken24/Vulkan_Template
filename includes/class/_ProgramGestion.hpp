@@ -6,11 +6,12 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/01 16:57:28 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/02 00:28:51 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef _PROGRAMGESTION_HPP
+# define _PROGRAMGESTION_HPP
 
 #if _WIN32
 	#define GLFW_EXPOSE_NATIVE_WIN32
@@ -23,16 +24,16 @@
 	#define GLFW_EXPOSE_NATIVE_X11
 #endif
 
+#include <stb_image.h>
+
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLFW_INCLUDE_VULKAN
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
-#include <vulkan/vulkan.hpp>
+// #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-// #include <stb_image.h>
 
 #include <algorithm>
 #include <stdexcept>
@@ -49,7 +50,7 @@
 #include <map>
 
 
-
+// 1920 x 1440
 #define WIDTH 1500
 #define HEIGHT 920
 
@@ -271,7 +272,23 @@ class ProgramGestion
 		void		createUniformBuffers();
 		void		createDescriptorPool();
 		void		createDescriptorSets();
-	
+		
+	//******************************************************************************************************//
+	// Texture mapping //
+		void			createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+							VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+		void			transitionImageLayout(VkImage image, VkFormat format,
+							VkImageLayout oldLayout, VkImageLayout newLayout);
+		void			copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+		void			createTextureImage();
+		void			endSingleTimeCommands(VkCommandBuffer commandBuffer);
+		VkCommandBuffer	beginSingleTimeCommands();
+
+		void			createTextureImageView();
+		VkImageView		createImageView(VkImage image, VkFormat format);
+		void			createTextureSampler();
+		
+		
 	//******************************************************************************************************//
 	//												Variables									    		//
 	//******************************************************************************************************//
@@ -280,6 +297,8 @@ class ProgramGestion
 	private:
 		GLFWwindow						*window;	//- Stock window -//
 		VkInstance						instance;	//- Stock instance -//
+		uint							widith = WIDTH;
+		uint							height = HEIGHT;	
 		
 		VkDebugUtilsMessengerEXT		debugMessenger;	//- Debug messenger -//
 		
@@ -302,11 +321,11 @@ class ProgramGestion
 		VkPipeline						graphicsPipeline;		//- Stock graphics pipeline -//
 		std::vector<VkFramebuffer>		swapChainFramebuffers;	//- Stock swap chain framebuffers -//
 
-		// Command buffers //
+	// Command buffers //
 		VkCommandPool					commandPool;			//- Stock command pool -//
 		std::vector<VkCommandBuffer>	commandBuffers;			//- Stock command buffer -//
 
-		// Stocking semaphores //
+	// Stocking semaphores //
 		std::vector<VkSemaphore>		imageAvailableSemaphores;	//- Stock image available semaphore -//
 		std::vector<VkSemaphore>		renderFinishedSemaphores;	//- Stock render finished semaphore -//
 		std::vector<VkFence>			inFlightFences;				//- Stock in flight fence -//
@@ -324,4 +343,12 @@ class ProgramGestion
 		std::vector<void*>				uniformBuffersMapped;		//- Stock uniform buffer mapped -//
 		VkDescriptorPool				descriptorPool;				//- Stock descriptor pool -//
 		std::vector<VkDescriptorSet>	descriptorSets;				//- Stock descriptor set -//
+
+	// Texture mapping //
+		VkImage							textureImage;				//- Stock texture image -//
+		VkDeviceMemory					textureImageMemory;			//- Stock texture image memory -//
+		VkImageView						textureImageView;			//- Stock texture image view -//
+		VkSampler						textureSampler;				//- Stock texture sampler -//
 };
+
+#endif

@@ -8,7 +8,8 @@
                 "/usr/include/x86_64-linux-gnu/c++/11",
                 "/home/dracken24/Documents/Vulkan",
                 "/home/dracken24/Documents/Vulkan/source/Vulkan-Headers/include",
-                "/home/dracken24/Documents/Vulkan/x86_64/include/vulkan"
+                "/home/dracken24/Documents/Vulkan/x86_64/include/vulkan",
+                "/home/dracken24/Documents/myPackages/stb"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
