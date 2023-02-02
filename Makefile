@@ -6,7 +6,7 @@
 #    By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/08/23 13:22:35 by nadesjar          #+#    #+#              #
-#    Updated: 2023/02/02 13:00:31 by dracken24        ###   ########.fr        #
+#    Updated: 2023/02/02 14:19:15 by dracken24        ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,10 +24,10 @@ OBJS			= $(patsubst $(P_SRCS)%.cpp, $(P_OBJS)%.o, $(FILES))
 
 CC				= c++
 
-CFLAGS			= -std=c++17 -I$(VULKAN_SDK_PATH)/include -I$(STB_INCLUDE_PATH) \
+CFLAGS			= -std=c++17 -g -I$(VULKAN_SDK_PATH)/include -I$(STB_INCLUDE_PATH) \
 				-Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable
 				
-LDFLAGS 		= -L$(VULKAN_SDK_PATH)/lib `pkg-config --static --libs glfw3` -lvulkan -lGL
+LDFLAGS 		= -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 
 NAME			= DrackenLib
 

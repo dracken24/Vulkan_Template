@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:20:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/02 13:34:35 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/02 14:42:57 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,6 +89,7 @@ void ProgramGestion::initVulkan()
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
+	createDepthResources();
 	createTextureImage();
 	createTextureImageView();
 	createTextureSampler();
@@ -231,7 +232,7 @@ void ProgramGestion::pickPhysicalDevice()
 			candidates.insert(std::make_pair(score, device));
 
 			// Print device info //
-			std::cout << "GPU[" << i << "] name: " << deviceProperties.deviceName << std::endl;
+			std::cout << "GPU[" << i << "] name: " << device << " ,GPU score: " << score << std::endl;
 		}
 		else
 		{
@@ -1834,4 +1835,13 @@ void	ProgramGestion::createTextureSampler()
 	{
 		throw std::runtime_error("failed to create texture sampler!");
 	}
+}
+
+//******************************************************************************************************//
+//											Deapth buffer									    		//
+//******************************************************************************************************//
+
+void	ProgramGestion::createDepthResources()
+{
+	
 }
