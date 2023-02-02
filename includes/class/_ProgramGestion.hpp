@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/02 12:42:20 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/02 13:07:46 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,7 +149,7 @@ class ProgramGestion
 	// Uniform buffer object or UBO//
 	struct UniformBufferObject
 	{
-		alignas(16)glm::vec2 foo;
+		// alignas(16)glm::vec2 foo;
 		alignas(16)glm::mat4 model;
 		alignas(16)glm::mat4 view;
 		alignas(16)glm::mat4 proj;
