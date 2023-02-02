@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:20:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/02 13:10:28 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/02 13:34:35 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -231,7 +231,7 @@ void ProgramGestion::pickPhysicalDevice()
 			candidates.insert(std::make_pair(score, device));
 
 			// Print device info //
-			std::cout << "GPU[" << i << "] name: " << device << " ,GPU score: " << score << std::endl;
+			std::cout << "GPU[" << i << "] name: " << deviceProperties.deviceName << std::endl;
 		}
 		else
 		{
@@ -1114,11 +1114,11 @@ void ProgramGestion::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 	}
 
 	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = renderPass;
-	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-	renderPassInfo.renderArea.offset = {0, 0};
-	renderPassInfo.renderArea.extent = swapChainExtent;
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;	// Type of the structure //
+	renderPassInfo.renderPass = renderPass;								// Render pass //
+	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];		// Framebuffer //
+	renderPassInfo.renderArea.offset = {0, 0};							// Render area //
+	renderPassInfo.renderArea.extent = swapChainExtent;					// Render area //
 
 	VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 	renderPassInfo.clearValueCount = 1;
@@ -1177,7 +1177,7 @@ void ProgramGestion::drawFrame()
 
 	uint32_t imageIndex;
 	VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX,
-											imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+						imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
@@ -1396,7 +1396,7 @@ void ProgramGestion::createIndexBuffer()
 	// Copy the data to the staging buffer //
 	void *data;
 	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, indices.data(), (size_t)bufferSize);
+		memcpy(data, indices.data(), (size_t)bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 
 	// Create the index buffer //
@@ -1415,27 +1415,35 @@ void ProgramGestion::createIndexBuffer()
 
 void ProgramGestion::createDescriptorSetLayout()
 {
-	VkDescriptorSetLayoutBinding uboLayoutBinding{};
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.pImmutableSamplers = nullptr;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	// Uniform buffer //
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};						// Uniform buffer //
+	uboLayoutBinding.binding = 0;											// Binding point //
+	uboLayoutBinding.descriptorCount = 1;									// Number of descriptors //
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;	// Type of descriptor //
+	uboLayoutBinding.pImmutableSamplers = nullptr;							// Not used //
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;				// Shader stage //
 
-	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 1;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	// Sampler //
+	VkDescriptorSetLayoutBinding samplerLayoutBinding{};								// Sampler //
+	samplerLayoutBinding.binding = 1;													// Binding point //
+	samplerLayoutBinding.descriptorCount = 1;											// Number of descriptors //
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;	// Type of descriptor //
+	samplerLayoutBinding.pImmutableSamplers = nullptr;									// Not used //
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;						// Shader stage //
 
-	std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
-	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	// Create the descriptor set layout //
+	std::array<VkDescriptorSetLayoutBinding, 2> bindings = {							// Create the descriptor set layout //
+		uboLayoutBinding, samplerLayoutBinding
+	};
+	
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};										// Create the descriptor set layout //
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	layoutInfo.pBindings = bindings.data();
 
-	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+	// Create the descriptor set layout //
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+	{
 		throw std::runtime_error("failed to create descriptor set layout!");
 	}
 }
@@ -1481,11 +1489,12 @@ void ProgramGestion::updateUniformBuffer(uint32_t currentImage)
 // Create the descriptor pool //
 void ProgramGestion::createDescriptorPool()
 {
-	std::array<VkDescriptorPoolSize, 2> poolSizes{};
-	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	// Create the descriptor pool //
+	std::array<VkDescriptorPoolSize, 2> poolSizes{};								// Create the descriptor pool //
+	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;							// Uniform buffer //
+	poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);		// Number of descriptors //
+	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;					// Sampler //
+	poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);		// Number of descriptors //
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1493,7 +1502,8 @@ void ProgramGestion::createDescriptorPool()
 	poolInfo.pPoolSizes = poolSizes.data();
 	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-	if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+	if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+	{
 		throw std::runtime_error("failed to create descriptor pool!");
 	}
 }
@@ -1503,26 +1513,30 @@ void	ProgramGestion::createDescriptorSets()
 {
 	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	allocInfo.pSetLayouts = layouts.data();
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;						// Allocate the descriptor sets //
+	allocInfo.descriptorPool = descriptorPool;												// Descriptor pool //
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);				// Number of descriptor sets //
+	allocInfo.pSetLayouts = layouts.data();													// Descriptor set layout //
 
+	// Allocate the descriptor sets //
 	descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-	if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
+	if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+	{
 		throw std::runtime_error("failed to allocate descriptor sets!");
 	}
 
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = uniformBuffers[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
+	// Update the descriptor sets //
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		VkDescriptorBufferInfo bufferInfo{};												// Uniform buffer //
+		bufferInfo.buffer = uniformBuffers[i];												// Buffer //
+		bufferInfo.offset = 0;																// Offset //
+		bufferInfo.range = sizeof(UniformBufferObject);										// Size //
 
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = textureImageView;
-		imageInfo.sampler = textureSampler;
+		VkDescriptorImageInfo imageInfo{};													// Image //
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;					// Image layout //
+		imageInfo.imageView = textureImageView;												// Image view //
+		imageInfo.sampler = textureSampler;													// Sampler //
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
