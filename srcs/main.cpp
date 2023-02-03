@@ -6,13 +6,13 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:14:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/02 13:00:27 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/02 20:52:19 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/class/_ProgramGestion.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
+// #define STB_IMAGE_IMPLEMENTATION
 
 int		main(void)
 {

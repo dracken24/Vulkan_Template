@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/02 14:42:44 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/02 22:03:05 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@
 	#define GLFW_EXPOSE_NATIVE_X11
 #endif
 
-#include <stb_image.h>
 
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLFW_INCLUDE_VULKAN
@@ -34,6 +33,8 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 #include <algorithm>
 #include <stdexcept>
@@ -49,10 +50,13 @@
 #include <set>
 #include <map>
 
+#include <unordered_map>
 
-// 1920 x 1440
 #define WIDTH 1500
 #define HEIGHT 920
+
+const std::string MODEL_PATH = "srcs/meshs/test.obj";
+const std::string TEXTURE_PATH = "srcs/meshs/viking_room.png";
 
 // Validation layers //
 const std::vector<const char*> validationLayers = {
@@ -65,10 +69,12 @@ const std::vector<const char*> deviceExtensions = {
 };
 
 // Vertex data //
-const std::vector<uint16_t> indices = {
-    0, 1, 2, 2, 3, 0,
-	4, 5, 6, 6, 7, 4
-};
+
+
+// const std::vector<uint16_t> indices = {
+//     0, 1, 2, 2, 3, 0,
+// 	4, 5, 6, 6, 7, 4
+// };
 
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
@@ -80,6 +86,71 @@ const std::vector<uint16_t> indices = {
 
 const int MAX_FRAMES_IN_FLIGHT = 2; // Max number of frames that can be in flight at the same time
 
+struct Vertex
+{
+	glm::vec3 pos;
+	glm::vec3 color;
+	glm::vec2 texCoord;
+
+	static VkVertexInputBindingDescription getBindingDescription()
+	{
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = sizeof(Vertex);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescription;
+	}
+
+	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
+	{
+		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+		attributeDescriptions[2].binding = 0;
+		attributeDescriptions[2].location = 2;
+		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+		return attributeDescriptions;
+	}
+
+	bool operator==(const Vertex& other) const
+	{
+		return pos == other.pos && color == other.color && texCoord == other.texCoord;
+	}
+};
+
+namespace std
+{
+	template<> struct hash<Vertex>
+	{
+		size_t operator()(Vertex const& vertex) const {
+			return ((hash<glm::vec3>()(vertex.pos) ^
+				(hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+}
+
+// Uniform buffer object or UBO//
+struct UniformBufferObject
+{
+	// alignas(16)glm::vec2 foo;
+	alignas(16)glm::mat4 model;
+	alignas(16)glm::mat4 view;
+	alignas(16)glm::mat4 proj;
+};
+
 //******************************************************************************************************//
 
 class ProgramGestion
@@ -87,7 +158,7 @@ class ProgramGestion
 	//******************************************************************************************************//
 	//												Structs										    		//
 	//******************************************************************************************************//
-	
+
 	// Queue family indices //
 	struct QueueFamilyIndices
 	{
@@ -108,66 +179,20 @@ class ProgramGestion
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
-	struct Vertex
-	{
-		glm::vec3 pos;
-		glm::vec3 color;
-		glm::vec2 texCoord;
-
-		static VkVertexInputBindingDescription getBindingDescription()
-		{
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = 0;
-			bindingDescription.stride = sizeof(Vertex);
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-			return bindingDescription;
-		}
-
-		static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
-		{
-			std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
-
-			attributeDescriptions[0].binding = 0;
-			attributeDescriptions[0].location = 0;
-			attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-			attributeDescriptions[1].binding = 0;
-			attributeDescriptions[1].location = 1;
-			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-			attributeDescriptions[2].binding = 0;
-			attributeDescriptions[2].location = 2;
-			attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-
-			return attributeDescriptions;
-		}
-	};
-
-	// Uniform buffer object or UBO//
-	struct UniformBufferObject
-	{
-		// alignas(16)glm::vec2 foo;
-		alignas(16)glm::mat4 model;
-		alignas(16)glm::mat4 view;
-		alignas(16)glm::mat4 proj;
-	};
-
 	// Uniform buffer square object contnant 2 triangles //
-	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+	std::vector<Vertex> vertices;
 
-		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-	};
+	// const std::vector<Vertex> vertices = {
+	// 	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+	// 	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+	// 	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+	// 	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+	// 	{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+	// 	{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+	// 	{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+	// 	{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+	// };
 
 	//******************************************************************************************************//
 	//												Functions									    		//
@@ -297,14 +322,22 @@ class ProgramGestion
 		VkCommandBuffer	beginSingleTimeCommands();
 
 		void			createTextureImageView();
-		VkImageView		createImageView(VkImage image, VkFormat format);
+		VkImageView		createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 		void			createTextureSampler();
 
 	//******************************************************************************************************//
 	// Depth buffer //
 		void		createDepthResources();
+		VkFormat	findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+						VkFormatFeatureFlags features);
+		VkFormat	findDepthFormat();
+		bool		hasStencilComponent(VkFormat format);
 		
-		
+
+	//******************************************************************************************************//
+	// Model //	
+		void		loadModel();
+
 	//******************************************************************************************************//
 	//												Variables									    		//
 	//******************************************************************************************************//
@@ -369,6 +402,8 @@ class ProgramGestion
 		VkImage							depthImage;					//- Stock depth image -//
 		VkDeviceMemory					depthImageMemory;			//- Stock depth image memory -//
 		VkImageView						depthImageView;				//- Stock depth image view -//
+
+		std::vector<uint32_t> indices;
 };
 
 #endif

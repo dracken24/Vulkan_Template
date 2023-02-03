@@ -6,25 +6,26 @@
 #    By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/08/23 13:22:35 by nadesjar          #+#    #+#              #
-#    Updated: 2023/02/02 14:19:15 by dracken24        ###   ########.fr        #
+#    Updated: 2023/02/02 20:19:22 by dracken24        ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-P_OBJS 				= ./objs/
-P_SRCS				= ./srcs/
-P_CLASS				= ./srcs/class/
+VULKAN_SDK_PATH			= /home/dracken24/Documents/Vulkan/x86_64
+STB_INCLUDE_PATH		= /home/dracken24/Documents/myPackages/stb
+TINYOBJ_INCLUDE_PATH 	= /home/dracken24/Documents/myPackages/vcpkg/packges/tinyobjloader_x64-linux
 
-FILES				= $(P_SRCS)main.cpp \
-					$(P_CLASS)_ProgramGestion.cpp \
+P_OBJS 			= ./objs/
+P_SRCS			= ./srcs/
+P_CLASS			= ./srcs/class/
 
-VULKAN_SDK_PATH		= /home/dracken24/Documents/Vulkan/x86_64
-STB_INCLUDE_PATH	= /home/dracken24/Documents/myPackages/stb
+FILES			= $(P_SRCS)main.cpp \
+				$(P_CLASS)_ProgramGestion.cpp \
 
 OBJS			= $(patsubst $(P_SRCS)%.cpp, $(P_OBJS)%.o, $(FILES))
 
 CC				= c++
 
-CFLAGS			= -std=c++17 -g -I$(VULKAN_SDK_PATH)/include -I$(STB_INCLUDE_PATH) \
+CFLAGS			= -std=c++17 -g -I$(VULKAN_SDK_PATH)/include -I$(STB_INCLUDE_PATH) -I$(TINYOBJ_INCLUDE_PATH) \
 				-Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable
 				
 LDFLAGS 		= -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi

@@ -6,11 +6,14 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:20:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/02 14:42:57 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/02 22:01:45 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 #include "../../includes/class/_ProgramGestion.hpp"
 #include "../../includes/engine.hpp"
@@ -87,12 +90,13 @@ void ProgramGestion::initVulkan()
 	createRenderPass();
 	createDescriptorSetLayout();
 	createGraphicsPipeline();
-	createFramebuffers();
 	createCommandPool();
 	createDepthResources();
+	createFramebuffers();
 	createTextureImage();
 	createTextureImageView();
 	createTextureSampler();
+	loadModel();
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffers();
@@ -231,8 +235,12 @@ void ProgramGestion::pickPhysicalDevice()
 			int score = rateDeviceSuitability(device);
 			candidates.insert(std::make_pair(score, device));
 
+			// Get device properties, name of GPU... //
+			VkPhysicalDeviceProperties deviceProperties;
+            vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
 			// Print device info //
-			std::cout << "GPU[" << i << "] name: " << device << " ,GPU score: " << score << std::endl;
+			std::cout << "GPU[" << i << "] name: " << deviceProperties.deviceName << " ,GPU score: " << score << std::endl;
 		}
 		else
 		{
@@ -257,8 +265,17 @@ void ProgramGestion::pickPhysicalDevice()
 	{
 		throw std::runtime_error("failed to find a suitable GPU!");
 	}
-	std::cout << "Phisical Device Selected: " << physicalDevice << std::endl
-			  << std::endl;
+
+	// Get selected device properties, name of GPU... //
+	VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+	std::cout << "Phisical Device Selected : " << deviceProperties.deviceName << std::endl;
+	std::cout << "API Version              : " << deviceProperties.apiVersion << std::endl;
+	std::cout << "Driver Version           : " << deviceProperties.driverVersion << std::endl;
+	std::cout << "Vendor ID                : " << deviceProperties.vendorID << std::endl;
+	std::cout << "Device ID                : " << deviceProperties.deviceID << std::endl;
+	std::cout << "Device Type              : " << deviceProperties.deviceType << std::endl;
+	std::cout << "Device LUID              : " << deviceProperties.limits.maxImageDimension2D << std::endl << std::endl;
 }
 
 bool ProgramGestion::isDeviceSuitable(VkPhysicalDevice device)
@@ -567,12 +584,16 @@ void ProgramGestion::createImageViews()
 
 	for (size_t i = 0; i < swapChainImages.size(); i++)
 	{
-		swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat);
+		swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 }
 
 void ProgramGestion::cleanupSwapChain()
 {
+	vkDestroyImageView(device, depthImageView, nullptr);
+    vkDestroyImage(device, depthImage, nullptr);
+    vkFreeMemory(device, depthImageMemory, nullptr);
+
 	for (auto framebuffer : swapChainFramebuffers)
 	{
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -607,12 +628,13 @@ void ProgramGestion::recreateSwapChain()
 	// Recreate the swap chain //
 	createSwapChain();
 	createImageViews();
+	createDepthResources();
 	createFramebuffers();
 
 	// Recreate the command buffers //
-	createUniformBuffers();
-	createDescriptorPool();
-	createCommandBuffers();
+	// createUniformBuffers();
+	// createDescriptorPool();
+	// createCommandBuffers();
 }
 
 //******************************************************************************************************//
@@ -932,6 +954,20 @@ void ProgramGestion::createGraphicsPipeline(void)
 	pipelineInfo.subpass = 0;												// Set the subpass //
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;						// Set the base pipeline handle //
 
+	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.minDepthBounds = 0.0f; // Optional
+	depthStencil.maxDepthBounds = 1.0f; // Optional
+	depthStencil.stencilTestEnable = VK_FALSE;
+	depthStencil.front = {}; // Optional
+	depthStencil.back = {}; // Optional
+
+	pipelineInfo.pDepthStencilState = &depthStencil;
+
 	// Create the graphics pipeline //
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
 	{
@@ -985,49 +1021,59 @@ static std::vector<char> readFile(const std::string &filename)
 // Multisampling //
 void ProgramGestion::createRenderPass()
 {
-	// Create the color attachment //
-	VkAttachmentDescription colorAttachment{};									// Color attachment //
-	colorAttachment.format = swapChainImageFormat;								// Format of the image //
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;							// Number of samples to write for each pixel //
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;						// What to do with the attachment before rendering //
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// What to do with the attachment after rendering //
-	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;			// What to do with the stencil before rendering //
-	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;			// What to do with the stencil after rendering //
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;					// Layout of the image before the render pass //
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;				// Layout of the image after the render pass //
+	VkAttachmentDescription colorAttachment{};
+	colorAttachment.format = swapChainImageFormat;
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkAttachmentReference colorAttachmentRef{};									// Reference to the color attachment //
-	colorAttachmentRef.attachment = 0;											// Index of the attachment //
-	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;		// Layout of the attachment //
+	VkAttachmentDescription depthAttachment{};
+	depthAttachment.format = findDepthFormat();
+	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	// Create the subpass //
-	VkSubpassDescription subpass{};												// Subpass //
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;				// Type of the subpass //
-	subpass.colorAttachmentCount = 1;											// Number of color attachments //
-	subpass.pColorAttachments = &colorAttachmentRef;							// List of color attachments //
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	// Create the subpass dependency //
-	VkSubpassDependency dependency{};											// Subpass dependency //
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;								// Index of the source subpass //
-	dependency.dstSubpass = 0;													// Index of the destination subpass //
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// Stage to wait at //
-	dependency.srcAccessMask = 0;												// Operations to wait for //
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// Stage to wait at //
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;			// Operations to wait for //
+	VkAttachmentReference depthAttachmentRef{};
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	// Create the render pass //
-	VkRenderPassCreateInfo renderPassInfo{};									// Render pass //
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;			// Type of the structure //
-	renderPassInfo.attachmentCount = 1;											// Number of attachments //
-	renderPassInfo.pAttachments = &colorAttachment;								// List of attachments //
-	renderPassInfo.subpassCount = 1;											// Number of subpasses //
-	renderPassInfo.pSubpasses = &subpass;										// List of subpasses //
-	renderPassInfo.dependencyCount = 1;											// Number of subpass dependencies //
-	renderPassInfo.pDependencies = &dependency;									// List of subpass dependencies //
+	VkSubpassDescription subpass{};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+	subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
-	// Create the render pass //
-	if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-	{
+	VkSubpassDependency dependency{};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+	std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+	VkRenderPassCreateInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	renderPassInfo.pAttachments = attachments.data();
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
+
+	if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create render pass!");
 	}
 }
@@ -1040,16 +1086,21 @@ void ProgramGestion::createFramebuffers()
 	// Create the framebuffers //
 	for (size_t i = 0; i < swapChainImageViews.size(); i++)
 	{
-		VkImageView attachments[] = { swapChainImageViews[i] };
+		// VkImageView attachments[] = { swapChainImageViews[i] };
 
-		VkFramebufferCreateInfo framebufferInfo{};								// Framebuffer //
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;		// Type of the structure //
-		framebufferInfo.renderPass = renderPass;								// Render pass //
-		framebufferInfo.attachmentCount = 1;									// Number of attachments //
-		framebufferInfo.pAttachments = attachments;								// List of attachments //
-		framebufferInfo.width = swapChainExtent.width;							// Width of the framebuffer //
-		framebufferInfo.height = swapChainExtent.height;						// Height of the framebuffer //
-		framebufferInfo.layers = 1;												// Number of layers //
+		std::array<VkImageView, 2> attachments = {
+			swapChainImageViews[i],
+			depthImageView
+		};
+
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferInfo.pAttachments = attachments.data();
+		framebufferInfo.width = swapChainExtent.width;
+		framebufferInfo.height = swapChainExtent.height;
+		framebufferInfo.layers = 1;
 
 		// Create the framebuffer //
 		if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
@@ -1122,8 +1173,13 @@ void ProgramGestion::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 	renderPassInfo.renderArea.extent = swapChainExtent;					// Render area //
 
 	VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+	clearValues[1].depthStencil = {1.0f, 0};
+
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
 
 	// Start the render pass //
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -1153,7 +1209,7 @@ void ProgramGestion::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
 		// Bind the index buffer //
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		// Bind the descriptor sets //
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1479,7 +1535,8 @@ void ProgramGestion::updateUniformBuffer(uint32_t currentImage)
 
 	// Update the uniform buffer //
 	UniformBufferObject ubo{};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	//                                                     / Rotate Speed /
+	ubo.model = glm::rotate(glm::mat4(0.20f), time * glm::radians(20.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1;
@@ -1564,13 +1621,15 @@ void	ProgramGestion::createDescriptorSets()
 //******************************************************************************************************//
 //											Texture mapping									    		//
 //******************************************************************************************************//
-
+ 
 void	ProgramGestion::createTextureImage()
 {
 	// Load the image //
 	int texWidth, texHeight, texChannels;
-    stbi_uc* 		pixels = stbi_load("srcs/textures/ichigo.png", &texWidth, &texHeight,
-								&texChannels, STBI_rgb_alpha);
+    // stbi_uc* 		pixels = stbi_load("srcs/textures/ichigo.png", &texWidth, &texHeight,
+	// 							&texChannels, STBI_rgb_alpha);
+	stbi_uc	*pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight,
+						&texChannels, STBI_rgb_alpha);
     VkDeviceSize	imageSize = texWidth * texHeight * 4;
 
 	// Check if the image has been loaded //
@@ -1722,25 +1781,21 @@ void	ProgramGestion::transitionImageLayout(VkImage image, VkFormat format,
 	VkPipelineStageFlags destinationStage;
 
 	// Create the image barrier //
-	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-	{
+	
+	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	}
-	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-	{
+	} else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	}
-	else
-	{
-		throw std::invalid_argument("transition d'orgisation non supportée!");
+	} else {
+		throw std::invalid_argument("unsupported layout transition!");
 	}
 
 	vkCmdPipelineBarrier(
@@ -1751,8 +1806,7 @@ void	ProgramGestion::transitionImageLayout(VkImage image, VkFormat format,
 		0, nullptr,
 		1, &barrier
 	);
-	
-	// Create the image barrier //
+
 	endSingleTimeCommands(commandBuffer);
 }
 
@@ -1785,17 +1839,17 @@ void	ProgramGestion::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t 
 
 void	ProgramGestion::createTextureImageView()
 {
-	textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+	textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
-VkImageView	ProgramGestion::createImageView(VkImage image, VkFormat format)
+VkImageView	ProgramGestion::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = image;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	viewInfo.format = format;
-	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.aspectMask = aspectFlags;
 	viewInfo.subresourceRange.baseMipLevel = 0;
 	viewInfo.subresourceRange.levelCount = 1;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -1843,5 +1897,96 @@ void	ProgramGestion::createTextureSampler()
 
 void	ProgramGestion::createDepthResources()
 {
+	VkFormat depthFormat = findDepthFormat();
 	
+	createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			depthImage, depthImageMemory);
+	depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
+VkFormat	ProgramGestion::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+	VkFormatFeatureFlags features)
+{
+	for (VkFormat format : candidates)
+	{
+		VkFormatProperties props;
+		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+		{
+			return format;
+		}
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+		{
+			return format;
+		}
+	}
+
+	throw std::runtime_error("failed to find supported format!");
+}
+
+VkFormat ProgramGestion::findDepthFormat()
+{
+    return findSupportedFormat(
+        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
+}
+
+bool	ProgramGestion::hasStencilComponent(VkFormat format)
+{
+    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+//******************************************************************************************************//
+//											Charging models									    		//
+//******************************************************************************************************//
+
+void	ProgramGestion::loadModel()
+{
+	tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
+	{
+        throw std::runtime_error(warn + err);
+    }
+
+	// For stock vertex once //
+	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+	// Stock each vertex position //
+	for (const auto& shape : shapes)
+	{
+		for (const auto& index : shape.mesh.indices)
+		{
+			Vertex vertex{};
+
+			
+			vertex.pos = {
+				attrib.vertices[3 * index.vertex_index + 0],
+				attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 2]
+			};
+
+			vertex.texCoord = {
+				attrib.texcoords[2 * index.texcoord_index + 0],
+				attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+
+			vertex.color = {1.0f, 1.0f, 1.0f};
+
+			if (uniqueVertices.count(vertex) == 0)
+			{
+				uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+				vertices.push_back(vertex);
+			}
+			
+			indices.push_back(uniqueVertices[vertex]);
+		}
+	}
 }
