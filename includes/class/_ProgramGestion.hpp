@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/02 22:03:05 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/03 12:27:56 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
@@ -211,10 +213,11 @@ class ProgramGestion
 	// Public Methods //
 	public:
 		void		run(std::string name, bool resizeable);
+		void		cleanup();
 
 	// Setters//
 
-	// Getters//	
+	// Getters//
 
 	//******************************************************************************************************//
 
@@ -223,7 +226,7 @@ class ProgramGestion
 		void	initWindow(std::string name, bool resizeable);
 		void	initVulkan();
 		void	mainLoop();
-		void	cleanup();
+		// void	cleanup();
 
 	//******************************************************************************************************//
 	// GPU //
@@ -232,6 +235,8 @@ class ProgramGestion
 		
 		bool	checkDeviceExtensionSupport(VkPhysicalDevice device);
 		bool	isDeviceSuitable(VkPhysicalDevice device);
+
+		int		rateDeviceSuitability(VkPhysicalDevice device);
 
 	//******************************************************************************************************//
 	// Queue //
@@ -312,17 +317,19 @@ class ProgramGestion
 		
 	//******************************************************************************************************//
 	// Texture mapping //
-		void			createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-							VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+		void			createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format,
+							VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
+								VkImage& image, VkDeviceMemory& imageMemory);
 		void			transitionImageLayout(VkImage image, VkFormat format,
-							VkImageLayout oldLayout, VkImageLayout newLayout);
+							VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 		void			copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 		void			createTextureImage();
 		void			endSingleTimeCommands(VkCommandBuffer commandBuffer);
 		VkCommandBuffer	beginSingleTimeCommands();
 
 		void			createTextureImageView();
-		VkImageView		createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+		VkImageView		createImageView(VkImage image, VkFormat format,
+							VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 		void			createTextureSampler();
 
 	//******************************************************************************************************//
@@ -335,14 +342,27 @@ class ProgramGestion
 		
 
 	//******************************************************************************************************//
+	// Events //
+		// void		key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+		// int			keyPress(GLFWwindow *window);
+
+	//******************************************************************************************************//
 	// Model //	
 		void		loadModel();
+
+	//******************************************************************************************************//
+	// Minimaps //	
+		void		generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
+						int32_t texHeight, uint32_t mipLevels);
 
 	//******************************************************************************************************//
 	//												Variables									    		//
 	//******************************************************************************************************//
 
 	// Private Attributes //
+	public:
+		int								_quit = 1;
+	
 	private:
 		GLFWwindow						*window;	//- Stock window -//
 		VkInstance						instance;	//- Stock instance -//
@@ -394,6 +414,7 @@ class ProgramGestion
 		std::vector<VkDescriptorSet>	descriptorSets;				//- Stock descriptor set -//
 
 	// Texture mapping //
+		uint32_t						mipLevels;					//- Stock minimap levels -//
 		VkImage							textureImage;				//- Stock texture image -//
 		VkDeviceMemory					textureImageMemory;			//- Stock texture image memory -//
 		VkImageView						textureImageView;			//- Stock texture image view -//
