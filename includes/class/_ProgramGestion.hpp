@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 21:53:06 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/03 12:27:56 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/03 19:04:46 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,13 +24,13 @@
 	#define GLFW_EXPOSE_NATIVE_X11
 #endif
 
-
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/gtc/matrix_transform.hpp>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -51,6 +51,8 @@
 #include <chrono>
 #include <set>
 #include <map>
+#include <chrono>
+#include <thread>
 
 #include <unordered_map>
 
@@ -216,8 +218,10 @@ class ProgramGestion
 		void		cleanup();
 
 	// Setters//
+		void		setDeltaTime(float deltaTime, int flag);
 
 	// Getters//
+		float		getDeltaTime() const;
 
 	//******************************************************************************************************//
 
@@ -232,6 +236,7 @@ class ProgramGestion
 	// GPU //
 		void	createLogicalDevice();
 		void	pickPhysicalDevice(); //- Find Graphic card -//
+		int 	chooseGPU(std::multimap<int, VkPhysicalDevice> devices);
 		
 		bool	checkDeviceExtensionSupport(VkPhysicalDevice device);
 		bool	isDeviceSuitable(VkPhysicalDevice device);
@@ -317,9 +322,10 @@ class ProgramGestion
 		
 	//******************************************************************************************************//
 	// Texture mapping //
-		void			createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format,
-							VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-								VkImage& image, VkDeviceMemory& imageMemory);
+		void			createImage(uint32_t width, uint32_t height, uint32_t mipLevels,
+							VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling,
+								VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image,
+									VkDeviceMemory& imageMemory);
 		void			transitionImageLayout(VkImage image, VkFormat format,
 							VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 		void			copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
@@ -356,12 +362,21 @@ class ProgramGestion
 						int32_t texHeight, uint32_t mipLevels);
 
 	//******************************************************************************************************//
+	// Multisampling //	
+		VkSampleCountFlagBits	getMaxUsableSampleCount();
+		void					createColorResources();
+		
+	//******************************************************************************************************//
+	// Others //
+		// float		deltaTime(void);
+	
+	//******************************************************************************************************//
 	//												Variables									    		//
 	//******************************************************************************************************//
 
 	// Private Attributes //
 	public:
-		int								_quit = 1;
+		int								_quit = 1;	
 	
 	private:
 		GLFWwindow						*window;	//- Stock window -//
@@ -424,7 +439,15 @@ class ProgramGestion
 		VkDeviceMemory					depthImageMemory;			//- Stock depth image memory -//
 		VkImageView						depthImageView;				//- Stock depth image view -//
 
-		std::vector<uint32_t> indices;
+		std::vector<uint32_t>			indices;					//- Stock indices -//
+		
+	// Multisampling //
+		VkSampleCountFlagBits			msaaSamples = VK_SAMPLE_COUNT_1_BIT;	//- Stock multisampling -//
+		VkImage 						colorImage;					//- Stock color image -//
+		VkDeviceMemory					colorImageMemory;			//- Stock color image memory -//
+		VkImageView						colorImageView;				//- Stock color image view -//
+		
+		float							_deltaTime = 0.0f;
 };
 
 #endif

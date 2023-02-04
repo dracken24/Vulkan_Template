@@ -6,7 +6,7 @@
 /*   By: dracken24 <dracken24@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 22:20:08 by dracken24         #+#    #+#             */
-/*   Updated: 2023/02/03 14:00:34 by dracken24        ###   ########.fr       */
+/*   Updated: 2023/02/03 19:07:29 by dracken24        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,6 +57,31 @@ ProgramGestion &ProgramGestion::operator=(const ProgramGestion &src)
 }
 
 //******************************************************************************************************//
+//												Setters										    		//
+//******************************************************************************************************//
+
+// Set the delta time //
+void		ProgramGestion::setDeltaTime(float deltaTime, int flag)
+{
+	if (flag == 0)
+		_deltaTime = deltaTime;
+	else if (flag == 1)
+		_deltaTime += deltaTime;
+	else if (flag == 2)
+		_deltaTime -= deltaTime;
+}
+
+//******************************************************************************************************//
+//												Getters										    		//
+//******************************************************************************************************//
+
+// Get the delta time //
+float		ProgramGestion::getDeltaTime(void) const
+{
+	return _deltaTime;
+}
+
+//******************************************************************************************************//
 //											Public Methods									    		//
 //******************************************************************************************************//
 
@@ -72,19 +97,12 @@ void ProgramGestion::run(std::string name, bool resizeable)
 void ProgramGestion::cleanup()
 {
 	cleanupSwapChain();
-
-	vkDestroySampler(device, textureSampler, nullptr);
-    vkDestroyImageView(device, textureImageView, nullptr);
-
-	vkDestroyImage(device, textureImage, nullptr);
-    vkFreeMemory(device, textureImageMemory, nullptr);
-
-	// Destroy the descriptor set layout //
+	
 	vkDestroyPipeline(device, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(device, renderPass, nullptr);
 
-	// Destroy buffers //
+	// Destroy all image views //
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		vkDestroyBuffer(device, uniformBuffers[i], nullptr);
@@ -92,6 +110,12 @@ void ProgramGestion::cleanup()
 	}
 
 	vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+
+	vkDestroySampler(device, textureSampler, nullptr);
+	vkDestroyImageView(device, textureImageView, nullptr);
+
+	vkDestroyImage(device, textureImage, nullptr);
+	vkFreeMemory(device, textureImageMemory, nullptr);
 
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
@@ -101,7 +125,7 @@ void ProgramGestion::cleanup()
 	vkDestroyBuffer(device, vertexBuffer, nullptr);
 	vkFreeMemory(device, vertexBufferMemory, nullptr);
 
-	// Destroy semaphores //
+	// Destroy all image views //
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -113,7 +137,7 @@ void ProgramGestion::cleanup()
 
 	vkDestroyDevice(device, nullptr);
 
-	// Destroy the debug messenger //
+	// Destroy debug messenger //
 	if (enableValidationLayers)
 	{
 		DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
@@ -138,9 +162,11 @@ void ProgramGestion::initWindow(std::string name, bool resizeable)
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, resizeable);
+	// glfwWindowHint(GLFW_RESIZABLE, resizeable);
 
 	window = glfwCreateWindow(widith, height, name.c_str(), nullptr, nullptr);
+
+	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
 
@@ -157,6 +183,7 @@ void ProgramGestion::initVulkan()
 	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createCommandPool();
+	createColorResources();
 	createDepthResources();
 	createFramebuffers();
 	createTextureImage();
@@ -178,7 +205,7 @@ void ProgramGestion::initVulkan()
 
 void ProgramGestion::mainLoop()
 {
-	// static int		i = 0;
+	static int		i = 0;
 	
 	while (_quit == 1 && glfwWindowShouldClose(window) == 0)
 	{
@@ -190,8 +217,8 @@ void ProgramGestion::mainLoop()
 		
 		waitTime();	// Wait for 16.666 ms to have 60 fps //
 
-		// std::cout << "Time: " << time << "      I: " << i << std::endl;
-		// i++;
+		// std::cout << "FPS: " << i << std::endl;
+		i++;
 	}
 	vkDeviceWaitIdle(device);
 }
@@ -200,6 +227,7 @@ void ProgramGestion::mainLoop()
 //										 	Control functions						  		    		//
 //******************************************************************************************************//
 
+// Set time for fps //
 void	waitTime(void)
 {
 	static float	time = 0;
@@ -212,7 +240,7 @@ void	waitTime(void)
 			return ;
 		sleep(0.001);
 	}
-	// time = 0;
+	time = 0;
 }
 
 float		deltaTime(void)
@@ -221,6 +249,7 @@ float		deltaTime(void)
 	float			currentFrame = glfwGetTime();
 	float			deltaTime = currentFrame - lastFrame;
 	
+	app.setDeltaTime(deltaTime, 1);
 	lastFrame = currentFrame;
 	
 	return (deltaTime);
@@ -245,9 +274,10 @@ int	keyPress(GLFWwindow *window)
 //										 	Gestion GPU								  		    		//
 //******************************************************************************************************//
 
-//- Check if the graphic card is suitable - 'No member function' -//
+//- Check if the graphic card is suitable -//
 int		ProgramGestion::rateDeviceSuitability(VkPhysicalDevice device)
 {
+	static int i = 0;
 	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDeviceFeatures deviceFeatures;
 
@@ -257,7 +287,7 @@ int		ProgramGestion::rateDeviceSuitability(VkPhysicalDevice device)
 	int score = 0;
 
 	// Discrete GPUs have a significant performance advantage
-	if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+	if (deviceProperties.deviceType ==	VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 	{
 		score += 1000;
 	}
@@ -271,12 +301,23 @@ int		ProgramGestion::rateDeviceSuitability(VkPhysicalDevice device)
 		return 0;
 	}
 
+	std::cout << "Phisical Device : " << deviceProperties.deviceName << std::endl;
+	std::cout << "API Version     : " << deviceProperties.apiVersion << std::endl;
+	std::cout << "Driver Version  : " << deviceProperties.driverVersion << std::endl;
+	std::cout << "Vendor ID       : " << deviceProperties.vendorID << std::endl;
+	std::cout << "Device ID       : " << deviceProperties.deviceID << std::endl;
+	std::cout << "Device Type     : " << deviceProperties.deviceType << std::endl;
+	std::cout << "Device LUID     : " << deviceProperties.limits.maxImageDimension2D << std::endl;
+	std::cout << "msaaSamples     : " << msaaSamples << std::endl << std::endl;
+
+	i++;
 	return score;
 }
 
+
 //- Find graphic card -//
 void	ProgramGestion::pickPhysicalDevice()
-{
+{	
 	uint32_t deviceCount = 0;
 
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -291,7 +332,6 @@ void	ProgramGestion::pickPhysicalDevice()
 
 	std::multimap<int, VkPhysicalDevice> candidates;
 
-	int i = 0;
 	std::cout << std::endl;
 	// Check for suitable GPU //
 	for (const auto &device : devices)
@@ -299,21 +339,14 @@ void	ProgramGestion::pickPhysicalDevice()
 		if (isDeviceSuitable(device))
 		{
 			physicalDevice = device;
+			msaaSamples = getMaxUsableSampleCount();
 			int score = rateDeviceSuitability(device);
 			candidates.insert(std::make_pair(score, device));
-
-			// Get device properties, name of GPU... //
-			VkPhysicalDeviceProperties deviceProperties;
-            vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-			// Print device info //
-			std::cout << "GPU[" << i << "] name: " << deviceProperties.deviceName << " ,GPU score: " << score << std::endl;
 		}
 		else
 		{
-			std::cout << "GPU not found" << std::endl;
+			throw std::runtime_error("GPU not found!");
 		}
-		i++;
 	}
 	std::cout << std::endl;
 
@@ -323,10 +356,13 @@ void	ProgramGestion::pickPhysicalDevice()
 		throw std::runtime_error("failed to find a suitable GPU!");
 	}
 
+
+	// int choose = chooseGPU(candidates);
 	// Check if the best candidate is suitable at all
-	if (candidates.rbegin()->first > 0)
+	if (candidates.begin()->first > 0)
 	{
-		physicalDevice = candidates.rbegin()->second;
+		physicalDevice = candidates.begin()->second;
+		// physicalDevice = candidates.rbegin()->second;
 	}
 	else
 	{
@@ -658,8 +694,12 @@ void ProgramGestion::createImageViews()
 void ProgramGestion::cleanupSwapChain()
 {
 	vkDestroyImageView(device, depthImageView, nullptr);
-    vkDestroyImage(device, depthImage, nullptr);
-    vkFreeMemory(device, depthImageMemory, nullptr);
+	vkDestroyImage(device, depthImage, nullptr);
+	vkFreeMemory(device, depthImageMemory, nullptr);
+
+	vkDestroyImageView(device, colorImageView, nullptr);
+	vkDestroyImage(device, colorImage, nullptr);
+	vkFreeMemory(device, colorImageMemory, nullptr);
 
 	for (auto framebuffer : swapChainFramebuffers)
 	{
@@ -671,7 +711,7 @@ void ProgramGestion::cleanupSwapChain()
 		vkDestroyImageView(device, imageView, nullptr);
 	}
 
-    vkDestroySwapchainKHR(device, swapChain, nullptr);
+	vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
 // Recreate the swap chain //
@@ -696,6 +736,7 @@ void ProgramGestion::recreateSwapChain()
 	// Recreate the swap chain //
 	createSwapChain();
 	createImageViews();
+	createColorResources();
 	createDepthResources();
 	createFramebuffers();
 
@@ -892,12 +933,6 @@ VkResult ProgramGestion::CreateDebugUtilsMessengerEXT(VkInstance instance,
 }
 
 //******************************************************************************************************//
-//												Getters										    		//
-//******************************************************************************************************//
-
-
-
-//******************************************************************************************************//
 //												Draw										    		//
 //******************************************************************************************************//
 
@@ -967,7 +1002,7 @@ void ProgramGestion::createGraphicsPipeline(void)
 	VkPipelineMultisampleStateCreateInfo multisampling{};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;	// Create the multisampling //
 	multisampling.sampleShadingEnable = VK_FALSE;									// Disable the sample shading //
-	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;						// Set the rasterization samples //
+	multisampling.rasterizationSamples = msaaSamples;								// Set the rasterization samples //
 
 	// Create the color blending //
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -1097,23 +1132,33 @@ void ProgramGestion::createRenderPass()
 {
 	VkAttachmentDescription colorAttachment{};											// Create the color attachment //
 	colorAttachment.format = swapChainImageFormat;										// Set the format //
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;									// Set the sample count //
+	colorAttachment.samples = msaaSamples;												// Set the sample count //
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;								// Set the load operation //
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;								// Set the store operation //
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;					// Set the stencil load operation //
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;					// Set the stencil store operation //
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;							// Set the initial layout //
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;						// Set the final layout //
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;				// Set the final layout //
 
 	VkAttachmentDescription depthAttachment{};											// Create the depth attachment //
 	depthAttachment.format = findDepthFormat();											// Set the format //					
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;									// Set the sample count //
+	depthAttachment.samples = msaaSamples;												// Set the sample count //
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;								// Set the load operation //
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;							// Set the store operation //
 	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;					// Set the stencil load operation //
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;					// Set the stencil store operation //
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;							// Set the initial layout //
 	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;		// Set the final layout //
+
+	VkAttachmentDescription colorAttachmentResolve{};									// Create the color attachment resolve //
+    colorAttachmentResolve.format = swapChainImageFormat;								// Set the format //
+    colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;								// Set the sample count //
+    colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;					// Set the load operation //
+    colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// Set the store operation //
+    colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;				// Set the stencil load operation //
+    colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;			// Set the stencil store operation //
+    colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;					// Set the initial layout //
+    colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;				// Set the final layout //
 
 	VkAttachmentReference colorAttachmentRef{};											// Create the color attachment reference //
 	colorAttachmentRef.attachment = 0;													// Set the attachment //
@@ -1123,11 +1168,16 @@ void ProgramGestion::createRenderPass()
 	depthAttachmentRef.attachment = 1;													// Set the attachment //
 	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;		// Set the layout //
 
+	VkAttachmentReference colorAttachmentResolveRef{};									// Create the color attachment resolve reference //
+    colorAttachmentResolveRef.attachment = 2;											// Set the attachment //
+    colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;		// Set the layout //
+
 	VkSubpassDescription subpass{};														// Create the subpass //
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;						// Set the pipeline bind point //
 	subpass.colorAttachmentCount = 1;													// Set the color attachment count //
 	subpass.pColorAttachments = &colorAttachmentRef;									// Set the color attachment //
 	subpass.pDepthStencilAttachment = &depthAttachmentRef;								// Set the depth attachment //
+	subpass.pResolveAttachments = &colorAttachmentResolveRef;							// Set the resolve attachment //
 
 	VkSubpassDependency dependency{};																						// Create the subpass dependency //
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;																			// Set the source subpass //
@@ -1137,7 +1187,9 @@ void ProgramGestion::createRenderPass()
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;	// Set the destination stage mask //
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;			// Set the destination access mask //
 
-	std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};	// Create the attachments //
+	std::array<VkAttachmentDescription, 3> attachments = {colorAttachment,
+		depthAttachment, colorAttachmentResolve};												// Create the attachments //
+		
 	VkRenderPassCreateInfo renderPassInfo{};													// Create the render pass info //
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;							// Set the structure type //
 	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());					// Set the attachment count //
@@ -1163,10 +1215,11 @@ void ProgramGestion::createFramebuffers()
 	{
 		// VkImageView attachments[] = { swapChainImageViews[i] };
 
-		std::array<VkImageView, 2> attachments = {
-			swapChainImageViews[i],
-			depthImageView
-		};
+		std::array<VkImageView, 3> attachments = {
+            colorImageView,
+            depthImageView,
+            swapChainImageViews[i]
+        };
 
 		// Create the framebuffer info //
 		VkFramebufferCreateInfo framebufferInfo{};
@@ -1604,16 +1657,10 @@ void ProgramGestion::createUniformBuffers()
 // Update the uniform buffer //
 void ProgramGestion::updateUniformBuffer(uint32_t currentImage)
 {
-	static auto startTime = std::chrono::high_resolution_clock::now();
-
-	// Get the current time //
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
 	// Update the uniform buffer //
 	UniformBufferObject ubo{};
 	//                                                     / Rotate Speed /
-	ubo.model = glm::rotate(glm::mat4(0.20f), time * glm::radians(20.0f), glm::vec3(0.0f, 0.0f, 1.0f));						// Rotate the model //
+	ubo.model = glm::rotate(glm::mat4(0.20f), _deltaTime * glm::radians(20.0f), glm::vec3(0.0f, 0.0f, 1.0f));						// Rotate the model //
 	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));			// Camera position //
 	ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);	// Perspective projection //
 	ubo.proj[1][1] *= -1;																									// Flip the Y axis //
@@ -1738,9 +1785,9 @@ void	ProgramGestion::createTextureImage()
     stbi_image_free(pixels);
 
 	// Create the image //
-    createImage(texWidth, texHeight, mipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+    createImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB,
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+			| VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 //
 	// Copy the staging buffer to the image //
 	transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1760,9 +1807,9 @@ void	ProgramGestion::createTextureImage()
 	generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
 }
 
-void	ProgramGestion::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format,
-			VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image,
-				VkDeviceMemory& imageMemory)
+void	ProgramGestion::createImage(uint32_t width, uint32_t height, uint32_t mipLevels,
+			VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+				VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
 	// Create the image //
     VkImageCreateInfo imageInfo{};
@@ -1777,7 +1824,7 @@ void	ProgramGestion::createImage(uint32_t width, uint32_t height, uint32_t mipLe
     imageInfo.tiling = tiling;									// The tiling of the image //
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;		// The initial layout of the image //
     imageInfo.usage = usage;									// The usage of the image //
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;					// The number of samples //
+    imageInfo.samples = numSamples;								// The number of samples //
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;			// The sharing mode of the image //
 
 	// Create the image //
@@ -1807,7 +1854,6 @@ void	ProgramGestion::createImage(uint32_t width, uint32_t height, uint32_t mipLe
 
 VkCommandBuffer	ProgramGestion::beginSingleTimeCommands()
 {
-	// Create the command pool //
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;	// The type of the structure //
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;					// The level of the command buffer //
@@ -1859,9 +1905,7 @@ void	ProgramGestion::transitionImageLayout(VkImage image, VkFormat format,
 	barrier.newLayout = newLayout;										// The new layout of the image //
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;				// The source queue family //
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;				// The destination queue family //
-	
-	// Create the image barrier //
-	barrier.image = image;
+	barrier.image = image;												// The image //
 	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;	// The aspect mask of the image //
 	barrier.subresourceRange.baseMipLevel = 0;							// The base mipmap level //
 	barrier.subresourceRange.levelCount = mipLevels;					// The number of mipmap levels //
@@ -1909,7 +1953,7 @@ void	ProgramGestion::transitionImageLayout(VkImage image, VkFormat format,
 }
 
 void	ProgramGestion::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
-{
+{	
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
 	// Create the image barrier //
@@ -1917,12 +1961,10 @@ void	ProgramGestion::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t 
 	region.bufferOffset = 0;											// The offset of the buffer //
 	region.bufferRowLength = 0;											// The row length of the buffer //
 	region.bufferImageHeight = 0;										// The image height of the buffer //
-
 	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;		// The aspect mask of the image //
 	region.imageSubresource.mipLevel = 0;								// The mipmap level of the image //
 	region.imageSubresource.baseArrayLayer = 0;							// The base array layer of the image //
 	region.imageSubresource.layerCount = 1;								// The number of array layers of the image //
-
 	region.imageOffset = {0, 0, 0};										// The offset of the image //
 	region.imageExtent = {												// The extent of the image //
 		width,
@@ -1940,7 +1982,8 @@ void	ProgramGestion::createTextureImageView()
 	textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
-VkImageView	ProgramGestion::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
+VkImageView	ProgramGestion::createImageView(VkImage image, VkFormat format,
+	VkImageAspectFlags aspectFlags, uint32_t mipLevels)
 {
 	// Create the image view //
 	VkImageViewCreateInfo viewInfo{};
@@ -1964,7 +2007,7 @@ VkImageView	ProgramGestion::createImageView(VkImage image, VkFormat format, VkIm
 }
 
 void	ProgramGestion::createTextureSampler()
-{
+{	
 	VkPhysicalDeviceProperties properties{};
 	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
@@ -1975,8 +2018,8 @@ void	ProgramGestion::createTextureSampler()
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;				// The addressing mode for the U coordinate //
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;				// The addressing mode for the V coordinate //
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;				// The addressing mode for the W coordinate //
-	samplerInfo.anisotropyEnable = VK_FALSE;								// Enable anisotropic filtering //
-	// samplerInfo.anisotropyEnable = VK_TRUE;
+	// samplerInfo.anisotropyEnable = VK_FALSE;								// Enable anisotropic filtering //
+	samplerInfo.anisotropyEnable = VK_TRUE;
 	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;		// The maximum anisotropy //
 	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;				// The border color //
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;							// Enable unnormalized coordinates //
@@ -2004,9 +2047,10 @@ void	ProgramGestion::createDepthResources()
 	VkFormat depthFormat = findDepthFormat();
 	
 	// Create the depth image //
-	createImage(swapChainExtent.width, swapChainExtent.height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+	createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, depthFormat,
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			depthImage, depthImageMemory);
+			
 	depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 }
 
@@ -2056,7 +2100,7 @@ bool	ProgramGestion::hasStencilComponent(VkFormat format)
 
 // Load the model //
 void	ProgramGestion::loadModel()
-{
+{	
 	tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -2086,7 +2130,7 @@ void	ProgramGestion::loadModel()
 
 			vertex.texCoord = {
 				attrib.texcoords[2 * index.texcoord_index + 0],
-				attrib.texcoords[2 * index.texcoord_index + 1]
+                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 			};
 
 			vertex.color = {1.0f, 1.0f, 1.0f};
@@ -2193,4 +2237,39 @@ void	ProgramGestion::generateMipmaps(VkImage image, VkFormat imageFormat, int32_
 			0, nullptr, 0, nullptr, 1, &barrier);
 
 	endSingleTimeCommands(commandBuffer);												// End the command buffer //
+}
+
+//******************************************************************************************************//
+//											Multisampling									    		//
+//******************************************************************************************************//
+
+// Create the multisampling //
+VkSampleCountFlagBits	ProgramGestion::getMaxUsableSampleCount()
+{
+    VkPhysicalDeviceProperties physicalDeviceProperties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+
+    VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts
+		& physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+		
+    if (counts & VK_SAMPLE_COUNT_64_BIT)			{ return VK_SAMPLE_COUNT_64_BIT; }
+    else if (counts & VK_SAMPLE_COUNT_32_BIT)		{ return VK_SAMPLE_COUNT_32_BIT; }
+    else if (counts & VK_SAMPLE_COUNT_16_BIT)		{ return VK_SAMPLE_COUNT_16_BIT; }
+    else if (counts & VK_SAMPLE_COUNT_8_BIT)		{ return VK_SAMPLE_COUNT_8_BIT; }
+    else if (counts & VK_SAMPLE_COUNT_4_BIT)		{ return VK_SAMPLE_COUNT_4_BIT; }
+    else if (counts & VK_SAMPLE_COUNT_2_BIT)		{ return VK_SAMPLE_COUNT_2_BIT; }
+
+    return VK_SAMPLE_COUNT_1_BIT;
+}
+
+// Create the multisampling //
+void	ProgramGestion::createColorResources()
+{
+    VkFormat colorFormat = swapChainImageFormat;
+
+    createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, colorFormat,
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
+			
+    colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 }
